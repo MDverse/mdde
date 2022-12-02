@@ -1,0 +1,25 @@
+name: mdse
+# channels priority
+# see https://bioconda.github.io/
+# conda-forge has highest priority
+channels:
+    - defaults
+    - bioconda
+    - conda-forge
+dependencies:
+    - python=3.9
+    - pip
+    - jupyterlab=3
+    - numpy
+    - scipy
+    - pandas
+    - matplotlib
+    - plotly
+    - pyyaml
+    # linters and more
+    - pylint
+    - pycodestyle
+    - pydocstyle
+    - black
+    - pip:
+        - streamlit
