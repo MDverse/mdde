@@ -1,0 +1,10 @@
+# Data files
+*.tsv
+data/*
+!data/.gitkeep
+
+# Byte-compiled Python files
+__pycache__/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints
