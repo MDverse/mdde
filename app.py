@@ -25,12 +25,11 @@ def load_data(loader_str):
 
     loader_str.text(f"Dimensions of the final dataframe: {df.shape[0]} lines (files) x {df.shape[1]} columns")
 
-st.title("MDverse")
+st.title("MDverse data explorer")
 
 # Create a text element and let the reader know the data is loading.
 data_load_state = st.text('Loading data...')
 
-# Load 10,000 rows of data into the dataframe.
 data = load_data(data_load_state)
 
 # Notify the reader that the data was successfully loaded.

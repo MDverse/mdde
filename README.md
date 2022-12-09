@@ -1,11 +1,11 @@
-# Molecular dynamics search engine
+# Molecular dynamics data explorer
 
 ## Setup your environment
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/MDverse/mdse.git
+git clone https://github.com/MDverse/mdde.git
 ```
 
 Move to the new directory:
@@ -22,12 +22,12 @@ Install [mamba](https://github.com/mamba-org/mamba):
 conda install mamba -n base -c conda-forge
 ```
 
-Create the `mdse` conda environment:
+Create the `mdde` conda environment:
 ```
 mamba env create -f binder/environment.yml
 ```
 
-Load the `mdse` conda environment:
+Load the `mdde` conda environment:
 ```
 conda activate mdda
 ```
