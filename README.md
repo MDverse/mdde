@@ -11,7 +11,7 @@ git clone https://github.com/MDverse/mdde.git
 Move to the new directory:
 
 ```bash
-cd mdse
+cd mdde
 ```
 
 Install [miniconda](https://docs.conda.io/en/latest/miniconda.html).
