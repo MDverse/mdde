@@ -109,7 +109,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     ----------
     df : pd.DataFrame
         original dataframe.
-    modify : bool
+    add_filter : bool
         allows to know if the user wants to do a filter.
 
     Returns
