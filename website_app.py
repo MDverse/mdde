@@ -69,7 +69,7 @@ def load_data() -> pd.DataFrame:
     pd.DataFrame
         returns an pd.DataFrame object containing our data.
     """
-    paths = ["data/zenodo_datasets_text.tsv", "data/zenodo_datasets.tsv"]
+    paths = ["../data/zenodo_datasets_text.tsv", "../data/zenodo_datasets.tsv"]
     data1 = pd.read_csv(paths[0], delimiter="\t")
     data2 = pd.read_csv(paths[1], delimiter="\t")
     data = pd.merge(data1, data2)
