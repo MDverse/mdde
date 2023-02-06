@@ -69,10 +69,19 @@ def load_data() -> pd.DataFrame:
     pd.DataFrame
         returns an pd.DataFrame object containing our data.
     """
-    paths = ["../data/zenodo_datasets_text.tsv", "../data/zenodo_datasets.tsv"]
-    data1 = pd.read_csv(paths[0], delimiter="\t")
-    data2 = pd.read_csv(paths[1], delimiter="\t")
-    data = pd.merge(data1, data2)
+    repository = ["zenodo", "figshare", "osf"]
+    dfs_merged = []
+    for name_rep in repository :
+        tmp_data_text = pd.read_csv(f"data/{name_rep}_datasets_text.tsv", 
+                            delimiter="\t")
+        tmp_dataset = pd.read_csv(f"data/{name_rep}_datasets.tsv",
+                            delimiter="\t")
+        tmp_data_merged = pd.merge(tmp_data_text, tmp_dataset, on=["dataset_id",
+                                    "dataset_origin"], validate="many_to_one")
+        print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
+        dfs_merged.append(tmp_data_merged)
+    data = pd.concat(dfs_merged, ignore_index=True)
+    print(f"Final data: found {data.shape[0]} datasets.")
     return data
 
 
@@ -319,7 +328,7 @@ def user_interaction() -> None:
     Allows interaction between the user and our informational data from MD data.
     """
     # Configuration of the display and the parameters of the website
-    st.set_page_config(layout="wide")
+    st.set_page_config(page_title="MDverse", page_icon="📊", layout="wide")
     data = load_data()
     st.title("MDverse")
     placeholder = "Enter search term (for instance: POPC, Gromacs, CHARMM36)"
