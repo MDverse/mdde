@@ -69,7 +69,7 @@ def load_data() -> pd.DataFrame:
     pd.DataFrame
         returns an pd.DataFrame object containing our data.
     """
-    paths = ["../data/zenodo_datasets_text.tsv", "../data/zenodo_datasets.tsv"]
+    paths = ["data/zenodo_datasets_text.tsv", "data/zenodo_datasets.tsv"]
     data1 = pd.read_csv(paths[0], delimiter="\t")
     data2 = pd.read_csv(paths[1], delimiter="\t")
     data = pd.merge(data1, data2)
@@ -275,7 +275,7 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> dict:
         onCellDoubleClicked=JsCode(clicked_cell_func(["Title", "Description"])),
     )
     # Build the dictionary that will contain all the configurations
-    gridOptions: dict = gb.build()
+    gridOptions = gb.build()
 
     # Configuration of specific column widths
     for column_parameters in gridOptions["columnDefs"]:
