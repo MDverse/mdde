@@ -37,6 +37,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "has_protein",
         "has_lipid",
         "has_nucleic",
+        "has_glucid",
+        "has_water_ion",
         "dataset_url"
     ]
     if not is_show :
@@ -58,6 +60,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Protein",
         "Lipid",
         "Nucleic",
+        "Glucid",
+        "Water/Ion",
         "URL",
     ]
     return results
@@ -80,6 +84,16 @@ def config_options_gro(data_filtered: pd.DataFrame, page_size: int) -> list:
         configuration for our Aggrid object.
     """ 
     gridOptions = wm.config_options(data_filtered, page_size)
+    # Configuration of specific column widths
+    col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
+    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 165
+    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 120
+    gridOptions["columnDefs"][col_names.index("Atom number")]["maxWidth"] = 180
+    gridOptions["columnDefs"][col_names.index("Protein")]["maxWidth"] = 145
+    gridOptions["columnDefs"][col_names.index("Lipid")]["maxWidth"] = 120
+    gridOptions["columnDefs"][col_names.index("Nucleic")]["maxWidth"] = 140
+    gridOptions["columnDefs"][col_names.index("Glucid")]["maxWidth"] = 125
+    gridOptions["columnDefs"][col_names.index("Water/Ion")]["maxWidth"] = 150
     return gridOptions
 
 

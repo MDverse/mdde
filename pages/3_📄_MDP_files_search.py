@@ -33,7 +33,11 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "title",
         "description",
         "file_name",
+        "dt",
+        "nsteps",
         "temperature",
+        "thermostat",
+        "barostat",
         "dataset_url"
     ]
     if not is_show :
@@ -51,7 +55,11 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Title",
         "Description",
         "File name",
+        "Step size",
+        "# Steps",
         "Temperature (K)",
+        "Thermostat",
+        "Barostat",
         "URL",
     ]
     return results
@@ -74,6 +82,14 @@ def config_options_mdp(data_filtered: pd.DataFrame, page_size: int) -> list:
         configuration for our Aggrid object.
     """
     gridOptions = wm.config_options(data_filtered, page_size)
+    # Configuration of specific column widths
+    col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
+    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 160
+    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 120
+    gridOptions["columnDefs"][col_names.index("Step size")]["maxWidth"] = 140
+    gridOptions["columnDefs"][col_names.index("# Steps")]["maxWidth"] = 140
+    gridOptions["columnDefs"][col_names.index("Temperature (K)")]["maxWidth"] = 190
+    gridOptions["columnDefs"][col_names.index("Thermostat")]["maxWidth"] = 150
     return gridOptions
 
 
