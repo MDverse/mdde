@@ -33,13 +33,11 @@ def load_data() -> tuple:
         print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
         dfs_merged.append(tmp_data_merged)
     datasets = pd.concat(dfs_merged, ignore_index=True)
-
     gro = pd.read_csv(f"data/gromacs_gro_files_info.tsv",
                             delimiter="\t", dtype={"dataset_id": str})
     gro_data = pd.merge(gro, datasets, how="left", on=["dataset_id", 
                         "dataset_origin"], validate="many_to_one")
     gro_data.to_csv("gro_data.tsv", sep="\t")
-
     mdp = pd.read_csv(f"data/gromacs_mdp_files_info.tsv",
                             delimiter="\t", dtype={"dataset_id": str})
     mdp_data = pd.merge(mdp, datasets, how="left", on=["dataset_id", 
@@ -200,7 +198,7 @@ def clicked_cell_func(col_name: list) -> str:
     str
         return the JS code as a string
     """
-    contents: str = (
+    contents = (
         f"params.node.data.{col_name[0]} + '<br/>' + params.node.data.{col_name[1]}"
     )
     return f"""
@@ -211,7 +209,7 @@ def clicked_cell_func(col_name: list) -> str:
             """
 
 
-def config_options(data_filtered: pd.DataFrame, page_size: int) -> dict:
+def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     """Configure the Aggrid object with dedicated functions for our data.
 
     Parameters
@@ -222,8 +220,8 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> dict:
     Returns
     -------
     dict
-        return a dictionary containing all the information of the configuration
-        for our Aggrid object.
+        return a lif of dictionary containing all the information of the 
+        configuration for our Aggrid object.
     """
     # Convert our dataframe into a GridOptionBuilder object
     gb = GridOptionsBuilder.from_dataframe(data_filtered)
@@ -250,14 +248,13 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> dict:
     return gridOptions
 
 
-@st.cache
-def convert_data(sel_row: dict) -> pd.DataFrame:
-    """Convert a dictionary into a pd.DataFrame object.
+def convert_data(sel_row: list) -> pd.DataFrame:
+    """Convert a list of dictionary into a pd.DataFrame object.
 
     Parameters
     ----------
-    sel_row : dict
-        contains the selected rows of our Aggrid array as a dictionary.
+    sel_row : list
+        contains the selected rows of our Aggrid array as a list of dictionary.
 
     Returns
     -------
