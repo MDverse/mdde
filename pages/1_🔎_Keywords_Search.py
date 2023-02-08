@@ -1,7 +1,8 @@
 """Our program is a streamlit app for exploring molecular dynamics (MD) data.
 
 There were extracted from unmoderated and generalized data such as Zenodo, etc.
-We propose an website allowing to facilitate the user's search in these MD data.
+We propose an website allowing to facilitate the user's search in these MD
+data.
 """
 
 import streamlit as st
@@ -37,13 +38,13 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "file_number",
         "dataset_url",
     ]
-    if not is_show :
+    if not is_show:
         results = data[
             data["title"].str.contains(search, case=False)
             | data["keywords"].str.contains(search, case=False)
             | data["description"].str.contains(search, case=False)
         ]
-    else :
+    else:
         results = data
     results = results[to_keep]
     results.columns = [
@@ -72,7 +73,7 @@ def config_options_keywords(data_filtered: pd.DataFrame, page_size: int) -> list
     Returns
     -------
     list
-        return a list of dictionary containing all the information of the 
+        return a list of dictionary containing all the information of the
         configuration for our Aggrid object.
     """
     gridOptions = wm.config_options(data_filtered, page_size)
@@ -104,10 +105,10 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         returns a AgGrid object or None if our data is empty.
     """
     # Start the research process
-    if search or is_show :
+    if search or is_show:
         results = request_search(data, search, is_show)
         return results
-    else :
+    else:
         return pd.DataFrame()
 
 
@@ -130,7 +131,7 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
     """
     with columns[1]:
         # Add a key to make the checkbox unique from other checkboxes
-        add_filter = st.checkbox("Add filters", key=select_data+10)
+        add_filter = st.checkbox("Add filters", key=select_data + 10)
     with columns[9]:
         page_size = st.selectbox(
             "Select rows", (10, 20, 30, 50, 100, 200, 250), index=1
@@ -145,15 +146,16 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
         gridOptions=gridOptions,
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
-        theme="alpine"
+        theme="alpine",
     )
     return grid_table
 
 
 def user_interaction(select_data: int) -> None:
     """Control the streamlit application.
-    
-    Allows interaction between the user and our informational data from MD data.
+
+    Allows interaction between the user and our informational data from MD
+    data.
 
     Parameters
     ----------
@@ -164,11 +166,13 @@ def user_interaction(select_data: int) -> None:
     data = wm.load_data()[select_data]
     search, is_show, columns = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
-    if not results.empty :
-        grid_table = display_AgGrid(results=results, columns=columns, select_data=select_data)
-        if grid_table :
+    if not results.empty:
+        grid_table = display_AgGrid(
+            results=results, columns=columns, select_data=select_data
+        )
+        if grid_table:
             wm.display_export_button(grid_table)
-    elif search != "" :
+    elif search != "":
         st.write("No result found.")
 
 

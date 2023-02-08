@@ -1,5 +1,4 @@
-"""This python file contains all the functions to help manage the site.
-"""
+"""This python file contains all the functions to help manage the site."""
 
 import streamlit as st
 import pandas as pd
@@ -24,24 +23,47 @@ def load_data() -> tuple:
     """
     repository = ["zenodo", "figshare", "osf"]
     dfs_merged = []
-    for name_rep in repository :
-        tmp_data_text = pd.read_csv(f"data/{name_rep}_datasets_text.tsv", 
-                            delimiter="\t", dtype={"dataset_id": str})
-        tmp_dataset = pd.read_csv(f"data/{name_rep}_datasets.tsv",
-                            delimiter="\t", dtype={"dataset_id": str})
-        tmp_data_merged = pd.merge(tmp_data_text, tmp_dataset, on=["dataset_id",
-                                    "dataset_origin"], validate="many_to_one")
+    for name_rep in repository:
+        tmp_data_text = pd.read_csv(
+            f"data/{name_rep}_datasets_text.tsv",
+            delimiter="\t",
+            dtype={"dataset_id": str},
+        )
+        tmp_dataset = pd.read_csv(
+            f"data/{name_rep}_datasets.tsv", delimiter="\t",
+            dtype={"dataset_id": str}
+        )
+        tmp_data_merged = pd.merge(
+            tmp_data_text,
+            tmp_dataset,
+            on=["dataset_id", "dataset_origin"],
+            validate="many_to_one",
+        )
         print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
         dfs_merged.append(tmp_data_merged)
     datasets = pd.concat(dfs_merged, ignore_index=True)
-    gro = pd.read_csv(f"data/gromacs_gro_files_info.tsv",
-                            delimiter="\t", dtype={"dataset_id": str})
-    gro_data = pd.merge(gro, datasets, how="left", on=["dataset_id", 
-                        "dataset_origin"], validate="many_to_one")
-    mdp = pd.read_csv(f"data/gromacs_mdp_files_info.tsv",
-                            delimiter="\t", dtype={"dataset_id": str})
-    mdp_data = pd.merge(mdp, datasets, how="left", on=["dataset_id", 
-                        "dataset_origin"], validate="many_to_one")                     
+    gro = pd.read_csv(
+        f"data/gromacs_gro_files_info.tsv", delimiter="\t",
+        dtype={"dataset_id": str}
+    )
+    gro_data = pd.merge(
+        gro,
+        datasets,
+        how="left",
+        on=["dataset_id", "dataset_origin"],
+        validate="many_to_one",
+    )
+    mdp = pd.read_csv(
+        f"data/gromacs_mdp_files_info.tsv", delimiter="\t",
+        dtype={"dataset_id": str}
+    )
+    mdp_data = pd.merge(
+        mdp,
+        datasets,
+        how="left",
+        on=["dataset_id", "dataset_origin"],
+        validate="many_to_one",
+    )
     return datasets, gro_data, mdp_data
 
 
@@ -71,7 +93,7 @@ def is_isoformat(dates: object) -> bool:
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     """Add a UI on top of a dataframe to let viewers filter columns.
 
-    This slightly modified function was extracted from the following git. 
+    This slightly modified function was extracted from the following git.
     https://github.com/tylerjrichards/st-filter-dataframe
 
     Parameters
@@ -158,9 +180,9 @@ def content_cell_func() -> str:
         return the JS code as a string.
     """
     return """
-            function(params) { 
-                return '<span title="' + params.value + '">'+params.value+'</span>';  
-            }; 
+            function(params) {
+                return '<span title="' + params.value + '">'+params.value+'</span>';
+            };
             """
 
 
@@ -179,10 +201,10 @@ def link_cell_func(col_name: str) -> str:
     str
         return the JS code as a string.
     """
-    contents = (f"params.node.data.{col_name}")
+    contents = f"params.node.data.{col_name}"
     return f"""
             function(params) {{
-                return '<a href="' + {contents} + '" target="_blank">'+ params.value+'</a>'; 
+                return '<a href="' + {contents} + '" target="_blank">'+ params.value+'</a>';
             }};
             """
 
@@ -190,7 +212,7 @@ def link_cell_func(col_name: str) -> str:
 def clicked_cell_func(col_name: list) -> str:
     """Return a Java script function as a string to display a popup.
 
-    The popup contains the title and description of the data. 
+    The popup contains the title and description of the data.
     The Java script code will be configured in the config_options function.
 
     Parameters
@@ -207,9 +229,9 @@ def clicked_cell_func(col_name: list) -> str:
         f"params.node.data.{col_name[0]} + '<br/>' + params.node.data.{col_name[1]}"
     )
     return f"""
-            function(params){{ 
+            function(params){{
                 confirm({contents});
-                return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>';  
+                return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>';
             }};
             """
 
@@ -227,7 +249,7 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     Returns
     -------
     list
-        return a list of dictionary containing all the information of the 
+        return a list of dictionary containing all the information of the
         configuration for our Aggrid object.
     """
     # Convert our dataframe into a GridOptionBuilder object
@@ -267,7 +289,8 @@ def convert_data(sel_row: list) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        returns an pd.DataFrame object containing the selected rows of our data.
+        returns an pd.DataFrame object containing the selected rows of our
+        data.
     """
     to_export: pd.DataFrame = pd.DataFrame.from_records(sel_row)
     if "_selectedRowNodeInfo" in to_export.columns:
@@ -276,7 +299,7 @@ def convert_data(sel_row: list) -> pd.DataFrame:
 
 
 def display_search_bar(select_data: int) -> tuple:
-    """Configuration of the display and the parameters of the website.
+    """Configure the display and the parameters of the website.
 
     Parameters
     ----------
@@ -286,7 +309,8 @@ def display_search_bar(select_data: int) -> tuple:
     Returns
     -------
     tuple
-        contains search word, a bool for checkbox and a list for the layout of the site.
+        contains search word, a bool for checkbox and a list for the layout of
+        the site.
     """
     st.title("MDverse")
     placeholder = "Enter search term (for instance: POPC, Gromacs, CHARMM36)"
