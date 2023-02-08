@@ -8,10 +8,43 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
-from st_keyup import st_keyup
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
-#import website_management.py as wm
+
+
+@st.experimental_memo
+def load_data() -> tuple:
+    """Retrieve our data and loads it into the pd.DataFrame object.
+
+    Returns
+    -------
+    tuple
+        returns an tuple contains pd.DataFrame object containing our data.
+    """
+    repository = ["zenodo", "figshare", "osf"]
+    dfs_merged = []
+    for name_rep in repository :
+        tmp_data_text = pd.read_csv(f"data/{name_rep}_datasets_text.tsv", 
+                            delimiter="\t", dtype={"dataset_id": str})
+        tmp_dataset = pd.read_csv(f"data/{name_rep}_datasets.tsv",
+                            delimiter="\t", dtype={"dataset_id": str})
+        tmp_data_merged = pd.merge(tmp_data_text, tmp_dataset, on=["dataset_id",
+                                    "dataset_origin"], validate="many_to_many")
+        print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
+        dfs_merged.append(tmp_data_merged)
+    datasets = pd.concat(dfs_merged, ignore_index=True)
+
+    gro = pd.read_csv(f"data/gromacs_gro_files_info.tsv",
+                            delimiter="\t", dtype={"dataset_id": str})
+    gro_data = pd.merge(gro, datasets, how="left", on=["dataset_id", 
+                        "dataset_origin"], validate="many_to_one")
+    gro_data.to_csv("gro_data.tsv", sep="\t")
+
+    mdp = pd.read_csv(f"data/gromacs_mdp_files_info.tsv",
+                            delimiter="\t", dtype={"dataset_id": str})
+    mdp_data = pd.merge(mdp, datasets, how="left", on=["dataset_id", 
+                        "dataset_origin"], validate="many_to_one")                     
+    return datasets, gro_data, mdp_data
 
 
 def is_isoformat(dates: object) -> bool:
