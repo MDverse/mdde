@@ -164,20 +164,26 @@ def content_cell_func() -> str:
             """
 
 
-def link_cell_func() -> str:
+def link_cell_func(col_name: str) -> str:
     """Return a Java script function as a string to create a hyperlink.
 
     The Java script code will be configured in the config_options function.
+
+    Parameters
+    ----------
+    col_name: str
+        name of column contains a hyperlink.
 
     Returns
     -------
     str
         return the JS code as a string.
     """
-    return """
-            function(params) {
-                return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>'; 
-            };
+    contents = (f"params.node.data.{col_name}")
+    return f"""
+            function(params) {{
+                return '<a href="' + {contents} + '" target="_blank">'+ params.value+'</a>'; 
+            }};
             """
 
 
@@ -238,7 +244,8 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
         data_filtered.columns, cellRenderer=JsCode(content_cell_func())
     )
     # Add a JsCode that will add a hyperlink to the URL column
-    gb.configure_column("URL", cellRenderer=JsCode(link_cell_func()))
+    gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
+    gb.configure_column("URL", hide=True)
     # Add a JsCode that will display the full content in a popup
     gb.configure_columns(
         ["Title", "Description"],
@@ -295,8 +302,6 @@ def display_search_bar(select_data: int) -> tuple:
     columns = st.columns([2 if i == 0 or i == 1 else 1 for i in range(10)])
     with columns[0]:
         is_show = st.checkbox("Show all", key=select_data)
-        #if is_show:
-            #search = " "
     return search, is_show, columns
 
 

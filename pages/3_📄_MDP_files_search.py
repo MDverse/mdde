@@ -74,7 +74,6 @@ def config_options_mdp(data_filtered: pd.DataFrame, page_size: int) -> list:
         configuration for our Aggrid object.
     """
     gridOptions = wm.config_options(data_filtered, page_size)
-    # Configuration of specific column widths
     return gridOptions
 
 
