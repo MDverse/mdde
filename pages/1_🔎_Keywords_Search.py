@@ -53,7 +53,7 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Creation date",
         "Authors",
         "Description",
-        "#Files",
+        "# Files",
         "URL",
     ]
     return results
@@ -78,7 +78,7 @@ def config_options_keywords(data_filtered: pd.DataFrame, page_size: int) -> list
     gridOptions = wm.config_options(data_filtered, page_size)
     # Configuration of specific column widths
     col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
-    gridOptions["columnDefs"][col_names.index("#Files")]["maxWidth"] = 100
+    gridOptions["columnDefs"][col_names.index("# Files")]["maxWidth"] = 100
     gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 100
     gridOptions["columnDefs"][col_names.index("Creation date")]["maxWidth"] = 140
     gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 140
