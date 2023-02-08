@@ -8,6 +8,7 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
+from st_keyup import st_keyup
 from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
 
@@ -19,7 +20,7 @@ def load_data() -> tuple:
     Returns
     -------
     tuple
-        returns an tuple contains pd.DataFrame object containing our data.
+        returns an tuple contains pd.DataFrame object containing our datasets.
     """
     repository = ["zenodo", "figshare", "osf"]
     dfs_merged = []
@@ -29,7 +30,7 @@ def load_data() -> tuple:
         tmp_dataset = pd.read_csv(f"data/{name_rep}_datasets.tsv",
                             delimiter="\t", dtype={"dataset_id": str})
         tmp_data_merged = pd.merge(tmp_data_text, tmp_dataset, on=["dataset_id",
-                                    "dataset_origin"], validate="many_to_many")
+                                    "dataset_origin"], validate="many_to_one")
         print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
         dfs_merged.append(tmp_data_merged)
     datasets = pd.concat(dfs_merged, ignore_index=True)
@@ -37,7 +38,6 @@ def load_data() -> tuple:
                             delimiter="\t", dtype={"dataset_id": str})
     gro_data = pd.merge(gro, datasets, how="left", on=["dataset_id", 
                         "dataset_origin"], validate="many_to_one")
-    gro_data.to_csv("gro_data.tsv", sep="\t")
     mdp = pd.read_csv(f"data/gromacs_mdp_files_info.tsv",
                             delimiter="\t", dtype={"dataset_id": str})
     mdp_data = pd.merge(mdp, datasets, how="left", on=["dataset_id", 
@@ -50,7 +50,7 @@ def is_isoformat(dates: object) -> bool:
 
     Parameters
     ----------
-    dates : object
+    dates: object
         contains all dates from a pandas dataframe.
 
     Returns
@@ -76,15 +76,15 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df: pd.DataFrame
         original dataframe.
-    add_filter : bool
+    add_filter: bool
         allows to know if the user wants to do a filter.
 
     Returns
     -------
     pd.DataFrame
-            Filtered dataframe
+        filtered dataframe.
     """
     if not add_filter:
         return df
@@ -155,7 +155,7 @@ def content_cell_func() -> str:
     Returns
     -------
     str
-        return the JS code as a string
+        return the JS code as a string.
     """
     return """
             function(params) { 
@@ -172,7 +172,7 @@ def link_cell_func() -> str:
     Returns
     -------
     str
-        return the JS code as a string
+        return the JS code as a string.
     """
     return """
             function(params) {
@@ -189,14 +189,13 @@ def clicked_cell_func(col_name: list) -> str:
 
     Parameters
     ----------
-    col_names : list
-        contains the list of column names of interest, namely the Title
-        and Description column.
+    col_names: list
+        contains the list of column names of interest.
 
     Returns
     -------
     str
-        return the JS code as a string
+        return the JS code as a string.
     """
     contents = (
         f"params.node.data.{col_name[0]} + '<br/>' + params.node.data.{col_name[1]}"
@@ -214,13 +213,15 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
 
     Parameters
     ----------
-    data_filtered : pd.DataFrame
-        contains our data filtered by a search
+    data_filtered: pd.DataFrame
+        contains our data filtered by a search.
+    page_size: int
+
 
     Returns
     -------
-    dict
-        return a lif of dictionary containing all the information of the 
+    list
+        return a list of dictionary containing all the information of the 
         configuration for our Aggrid object.
     """
     # Convert our dataframe into a GridOptionBuilder object
@@ -253,7 +254,7 @@ def convert_data(sel_row: list) -> pd.DataFrame:
 
     Parameters
     ----------
-    sel_row : list
+    sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
 
     Returns
@@ -265,3 +266,55 @@ def convert_data(sel_row: list) -> pd.DataFrame:
     if "_selectedRowNodeInfo" in to_export.columns:
         to_export.pop("_selectedRowNodeInfo")
     return to_export
+
+
+def display_search_bar(select_data: int) -> tuple:
+    """Configuration of the display and the parameters of the website.
+
+    Parameters
+    ----------
+    select_data: int
+        contains a number (0, 1 or 2) that will allow the selection of data.
+
+    Returns
+    -------
+    tuple
+        contains search word, a bool for checkbox and a list for the layout of the site.
+    """
+    st.title("MDverse")
+    placeholder = "Enter search term (for instance: POPC, Gromacs, CHARMM36)"
+    if select_data == 0:
+        label_search = "Keywords search"
+    elif select_data == 1:
+        label_search = "GRO files search"
+    else:
+        label_search = "MDP files search"
+    col_keyup, _, _ = st.columns([3, 1, 1])
+    with col_keyup:
+        search = st_keyup(label_search, placeholder=placeholder)
+    columns = st.columns([2 if i == 0 or i == 1 else 1 for i in range(10)])
+    with columns[0]:
+        is_show = st.checkbox("Show all", key=select_data)
+        #if is_show:
+            #search = " "
+    return search, is_show, columns
+
+
+def display_export_button(grid_table: object) -> None:
+    """Add a download button to export the selected data from the AgGrid table.
+
+    Parameters
+    ----------
+    grid_table: object
+        contains the AgGrid object.
+    """
+    sel_row = grid_table["selected_rows"]
+    if sel_row:
+        new_data = convert_data(sel_row)
+        today_date = datetime.now().strftime("%Y-%m-%d")
+        st.download_button(
+            label="Export to tsv",
+            data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
+            file_name=f"mdverse_{today_date}.tsv",
+            mime="text/tsv",
+        )
