@@ -41,11 +41,14 @@ def request_search(data: pd.DataFrame, search: str) -> pd.DataFrame:
         "file_number",
         "dataset_url",
     ]
-    results = data[
-        data["title"].str.contains(search, case=False)
-        | data["keywords"].str.contains(search, case=False)
-        | data["description"].str.contains(search, case=False)
-    ]
+    if not st.session_state['show'] : 
+        results = data[
+            data["title"].str.contains(search, case=False)
+            | data["keywords"].str.contains(search, case=False)
+            | data["description"].str.contains(search, case=False)
+        ]
+    else :
+        results = data 
     results = results[to_keep]
     results.columns = [
         "Dataset",
@@ -238,7 +241,7 @@ def clicked_cell_func(col_name: list) -> str:
     str
         return the JS code as a string
     """
-    contents: str = (
+    contents = (
         f"params.node.data.{col_name[0]} + '<br/>' + params.node.data.{col_name[1]}"
     )
     return f"""
@@ -328,8 +331,12 @@ def user_interaction() -> None:
     Allows interaction between the user and our informational data from MD data.
     """
     # Configuration of the display and the parameters of the website
-    st.set_page_config(page_title="MDverse", page_icon="📊", layout="wide")
-    data = load_data()
+    st.set_page_config(page_title="MDverse", layout="wide")
+    if 'data' not in st.session_state: 
+        st.markdown("<meta http-equiv='refresh' content='0; URL=http://localhost:8501' />", unsafe_allow_html=True)
+        return
+    data = st.session_state['data'][0]
+    #data = load_data()
     st.title("MDverse")
     placeholder = "Enter search term (for instance: POPC, Gromacs, CHARMM36)"
     col_keyup, _, _ = st.columns([3, 1, 1])
@@ -337,9 +344,12 @@ def user_interaction() -> None:
         search = st_keyup("Keywords search", placeholder=placeholder)
     columns = st.columns([2 if i == 0 or i == 1 else 1 for i in range(10)])
     with columns[0]:
-        show_all = st.checkbox("Show all")
+        show_all = st.checkbox("Show all", st.session_state['show'])
         if show_all:
             search = " "
+            st.session_state['show'] = True
+        else :
+            st.session_state['show'] = False
     # Start the research process
     if search:
         with columns[1]:
@@ -354,12 +364,13 @@ def user_interaction() -> None:
             st.write(len(data_filtered), "elements found")
             # A dictionary containing all the configurations for our Aggrid objects
             gridOptions = config_options(data_filtered, page_size)
+            # Generate our Aggrid table and display it
             grid_table = AgGrid(
                 data_filtered,
                 gridOptions=gridOptions,
                 allow_unsafe_jscode=True,
                 fit_columns_on_grid_load=True,
-                theme="alpine",
+                theme="alpine"
             )
             sel_row = grid_table["selected_rows"]
             if sel_row:
