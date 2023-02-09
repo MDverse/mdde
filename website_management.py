@@ -77,10 +77,7 @@ def load_data() -> tuple:
         returns an tuple contains pd.DataFrame object containing our datasets.
     """
     datasets = pd.read_parquet("https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true")
-    gro = pd.read_csv(
-        f"data/gromacs_gro_files_info.tsv", delimiter="\t",
-        dtype={"dataset_id": str}
-    )
+    gro = pd.read_parquet("https://github.com/MDverse/data/blob/master/gromacs_gro_files.parquet?raw=true")
     gro_data = pd.merge(
         gro,
         datasets,
@@ -88,10 +85,7 @@ def load_data() -> tuple:
         on=["dataset_id", "dataset_origin"],
         validate="many_to_one",
     )
-    mdp = pd.read_csv(
-        f"data/gromacs_mdp_files_info.tsv", delimiter="\t",
-        dtype={"dataset_id": str}
-    )
+    mdp = pd.read_parquet("https://github.com/MDverse/data/blob/master/gromacs_mdp_files.parquet?raw=true")
     mdp_data = pd.merge(
         mdp,
         datasets,
