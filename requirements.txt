@@ -1,0 +1,7 @@
+numpy
+scipy
+pandas
+matplotlib
+streamlit
+streamlit-aggrid
+streamlit-keyup

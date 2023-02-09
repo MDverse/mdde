@@ -10,10 +10,6 @@ dependencies:
     - python=3.9
     - pip
     - jupyterlab=3
-    - numpy
-    - scipy
-    - pandas
-    - matplotlib
     - plotly
     - pyyaml
     # linters and more
@@ -23,6 +19,4 @@ dependencies:
     - black
     - pip:
         - watermark
-        - streamlit
-        - streamlit-aggrid
-        - streamlit-keyup
+        - -r ../requirements.txt
