@@ -67,6 +67,41 @@ def load_data() -> tuple:
     return datasets, gro_data, mdp_data
 
 
+@st.experimental_memo
+def load_data() -> tuple:
+    """Retrieve our data and loads it into the pd.DataFrame object.
+
+    Returns
+    -------
+    tuple
+        returns an tuple contains pd.DataFrame object containing our datasets.
+    """
+    datasets = pd.read_parquet("https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true")
+    gro = pd.read_csv(
+        f"data/gromacs_gro_files_info.tsv", delimiter="\t",
+        dtype={"dataset_id": str}
+    )
+    gro_data = pd.merge(
+        gro,
+        datasets,
+        how="left",
+        on=["dataset_id", "dataset_origin"],
+        validate="many_to_one",
+    )
+    mdp = pd.read_csv(
+        f"data/gromacs_mdp_files_info.tsv", delimiter="\t",
+        dtype={"dataset_id": str}
+    )
+    mdp_data = pd.merge(
+        mdp,
+        datasets,
+        how="left",
+        on=["dataset_id", "dataset_origin"],
+        validate="many_to_one",
+    )
+    return datasets, gro_data, mdp_data
+
+
 def is_isoformat(dates: object) -> bool:
     """Check that all dates are in iso 8601 format.
 
