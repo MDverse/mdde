@@ -1,36 +1,33 @@
+"""Our program is a streamlit app for exploring molecular dynamics (MD) data.
+
+There were extracted from unmoderated and generalized data such as Zenodo, etc.
+We propose an website allowing to facilitate the user's search in these MD
+data.
+"""
+
 import streamlit as st
-import pandas as pd
-import numpy as np
 
+st.set_page_config(page_title="MDverse", page_icon="🔎", layout="wide")
 
-def load_data(loader_str):
-    df = pd.DataFrame()
-    for repository in ["zenodo", "figshare", "osf"]:
-        datasets = pd.read_csv(
-            f"data/{repository}_datasets.tsv",
-            sep="\t",
-            dtype={"dataset_id": str}
-        )
-        loader_str.write(f"{repository}: found {datasets.shape[0]} datasets.")
-        files = pd.read_csv(
-            f"data/{repository}_files.tsv",
-            sep="\t",
-            dtype={"dataset_id": str, "file_type": str,
-                "file_md5": str, "file_url": str}
-        )
-        loader_str.text(f"{repository}: found {files.shape[0]} files.")
-        tab = pd.merge(files, datasets, how="left", on=["dataset_id", "dataset_origin"], validate="many_to_one")
-        loader_str.text(f"{repository}: merged dataframe has {tab.shape[0]} entries.")
-        df = pd.concat([df, tab], ignore_index=True)
+st.write("# Welcome to MDverse! 🔎")
 
-    loader_str.text(f"Dimensions of the final dataframe: {df.shape[0]} lines (files) x {df.shape[1]} columns")
+st.sidebar.success("Select the type of MD search.")
 
-st.title("MDverse data explorer")
-
-# Create a text element and let the reader know the data is loading.
-data_load_state = st.text('Loading data...')
-
-data = load_data(data_load_state)
-
-# Notify the reader that the data was successfully loaded.
-data_load_state.text('Loading data...done!')
+st.markdown(
+    """
+    Streamlit is an open-source app framework built specifically for
+    Machine Learning and Data Science projects.
+    **👈 Select a demo from the sidebar** to see some examples
+    of what Streamlit can do!
+    ### Want to learn more?
+    - Check out [streamlit.io](https://streamlit.io)
+    - Jump into our [documentation](https://docs.streamlit.io)
+    - Ask a question in our [community
+        forums](https://discuss.streamlit.io)
+    ### See more complex demos
+    - Use a neural net to [analyze the Udacity Self-driving Car Image
+        Dataset](https://github.com/streamlit/demo-self-driving)
+    - Explore a [New York City rideshare dataset]
+        (https://github.com/streamlit/demo-uber-nyc-pickups)
+"""
+)
