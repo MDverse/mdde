@@ -24,3 +24,5 @@ dependencies:
     - pip:
         - streamlit
         - watermark
+        - streamlit-aggrid
+        - streamlit-keyup
