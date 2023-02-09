@@ -17,6 +17,8 @@ dependencies:
     - pycodestyle
     - pydocstyle
     - black
+    # Parquet tools
+    - parquet-tools
     - pip:
         - watermark
         - -r ../requirements.txt
