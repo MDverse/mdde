@@ -22,7 +22,7 @@ dependencies:
     - pydocstyle
     - black
     - pip:
-        - streamlit
         - watermark
+        - streamlit
         - streamlit-aggrid
         - streamlit-keyup
