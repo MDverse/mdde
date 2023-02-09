@@ -162,7 +162,7 @@ def user_interaction(select_data: int) -> None:
     select_data: int
         contains a number (0, 1 or 2) that will allow the selection of data.
     """
-    st.set_page_config(page_title="MDverse", layout="wide")
+    #st.set_page_config(page_title="MDverse", layout="wide")
     data = wm.load_data()[select_data]
     search, is_show, columns = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
