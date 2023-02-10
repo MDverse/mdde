@@ -378,15 +378,27 @@ def display_export_button(sel_row: list) -> None:
 
 
 def display_details(sel_row: list) -> None:
+    if 'cursor' not in st.session_state :
+        st.session_state['cursor'] = 0
     size_selected = len(sel_row) 
     if size_selected != 0:
+
+        print("VALUES : ",st.session_state['cursor']," ",sel_row[st.session_state['cursor']])
         st.sidebar.markdown(
-            "**" + sel_row[0]["Title"] + "**", 
+            "**" + sel_row[st.session_state['cursor']]["Title"] + "**", 
             unsafe_allow_html=True
         )
-        st.sidebar.write(sel_row[0]["Description"])
-        col_left, col_right = st.sidebar.columns([1, 1])
-        with col_left:
-            st.button("Previous")
-        with col_right:
-            st.button("Next")
+        st.sidebar.write(sel_row[st.session_state['cursor']]["Description"])
+        if size_selected != 1 :
+            col_left, col_right = st.sidebar.columns([1, 1])
+            with col_left:
+                if st.session_state['cursor'] - 1 >= 0:
+                    previous = st.button("Previous")
+                    if previous:
+                        st.session_state['cursor'] -= 1
+            with col_right:
+                if st.session_state['cursor'] + 1 < size_selected:
+                    next = st.button("Next")
+                    if next:
+                        st.session_state['cursor'] += 1
+            st.sidebar.write(st.session_state['cursor'], "selected")
