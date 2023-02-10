@@ -358,15 +358,14 @@ def display_search_bar(select_data: int) -> tuple:
     return search, is_show, columns
 
 
-def display_export_button(grid_table: object) -> None:
+def display_export_button(sel_row: list) -> None:
     """Add a download button to export the selected data from the AgGrid table.
 
     Parameters
     ----------
     grid_table: object
-        contains the AgGrid object.
+        contains a list of dictionary of all data selected.
     """
-    sel_row = grid_table["selected_rows"]
     if sel_row:
         new_data = convert_data(sel_row)
         today_date = datetime.now().strftime("%Y-%m-%d")
@@ -376,3 +375,18 @@ def display_export_button(grid_table: object) -> None:
             file_name=f"mdverse_{today_date}.tsv",
             mime="text/tsv",
         )
+
+
+def display_details(sel_row: list) -> None:
+    size_selected = len(sel_row) 
+    if size_selected != 0:
+        st.sidebar.markdown(
+            "**" + sel_row[0]["Title"] + "**", 
+            unsafe_allow_html=True
+        )
+        st.sidebar.write(sel_row[0]["Description"])
+        col_left, col_right = st.sidebar.columns([1, 1])
+        with col_left:
+            st.button("Previous")
+        with col_right:
+            st.button("Next")

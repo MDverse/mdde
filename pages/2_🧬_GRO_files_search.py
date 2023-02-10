@@ -182,7 +182,9 @@ def user_interaction(select_data: int) -> None:
             results=results, columns=columns, select_data=select_data
         )
         if grid_table:
-            wm.display_export_button(grid_table)
+            sel_row = grid_table["selected_rows"]
+            wm.display_export_button(sel_row)
+            wm.display_details(sel_row)
     elif search != "":
         st.write("No result found.")
 
