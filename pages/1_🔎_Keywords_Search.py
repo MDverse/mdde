@@ -146,7 +146,7 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
         gridOptions=gridOptions,
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
-        theme="alpine",
+        theme="alpine"
     )
     return grid_table
 

@@ -32,6 +32,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "dataset_origin",
         "dataset_id",
         "title",
+        "date_creation",
+        "author",
         "description",
         "file_name",
         "atom_number",
@@ -55,6 +57,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Dataset",
         "ID",
         "Title",
+        "Creation date",
+        "Authors",
         "Description",
         "File name",
         "Atom number",
@@ -95,6 +99,8 @@ def config_options_gro(data_filtered: pd.DataFrame, page_size: int) -> list:
     gridOptions["columnDefs"][col_names.index("Nucleic")]["maxWidth"] = 140
     gridOptions["columnDefs"][col_names.index("Glucid")]["maxWidth"] = 125
     gridOptions["columnDefs"][col_names.index("Water/Ion")]["maxWidth"] = 150
+    gridOptions["columnDefs"][col_names.index("Creation date")]["hide"] = "true"
+    gridOptions["columnDefs"][col_names.index("Authors")]["hide"] = "true"
     return gridOptions
 
 
@@ -157,7 +163,7 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
         gridOptions=gridOptions,
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
-        theme="alpine",
+        theme="alpine"
     )
     return grid_table
 

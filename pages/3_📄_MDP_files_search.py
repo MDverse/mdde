@@ -7,7 +7,7 @@ data.
 
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid
+from st_aggrid import AgGrid, GridUpdateMode
 import website_management as wm
 
 
@@ -32,6 +32,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "dataset_origin",
         "dataset_id",
         "title",
+        "date_creation",
+        "author",
         "description",
         "file_name",
         "dt",
@@ -54,6 +56,8 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Dataset",
         "ID",
         "Title",
+        "Creation date",
+        "Authors",
         "Description",
         "File name",
         "Step size",
@@ -91,6 +95,8 @@ def config_options_mdp(data_filtered: pd.DataFrame, page_size: int) -> list:
     gridOptions["columnDefs"][col_names.index("# Steps")]["maxWidth"] = 140
     gridOptions["columnDefs"][col_names.index("Temperature (K)")]["maxWidth"] = 190
     gridOptions["columnDefs"][col_names.index("Thermostat")]["maxWidth"] = 150
+    gridOptions["columnDefs"][col_names.index("Creation date")]["hide"] = "true"
+    gridOptions["columnDefs"][col_names.index("Authors")]["hide"] = "true"
     return gridOptions
 
 
@@ -154,6 +160,8 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
         theme="alpine",
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        reload_data=False
     )
     return grid_table
 
@@ -179,6 +187,7 @@ def user_interaction(select_data: int) -> None:
         )
         if grid_table:
             sel_row = grid_table["selected_rows"]
+            st.sidebar.write(len(sel_row), "selected")
             wm.display_export_button(sel_row)
             wm.display_details(sel_row)
     elif search != "":

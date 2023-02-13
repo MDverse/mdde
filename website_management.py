@@ -12,7 +12,7 @@ from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
 
 
-@st.experimental_memo
+@st.cache_data
 def load_data() -> tuple:
     """Retrieve our data and loads it into the pd.DataFrame object.
 
@@ -67,7 +67,7 @@ def load_data() -> tuple:
     return datasets, gro_data, mdp_data
 
 
-@st.experimental_memo
+@st.cache_data
 def load_data() -> tuple:
     """Retrieve our data and loads it into the pd.DataFrame object.
 
@@ -238,33 +238,6 @@ def link_cell_func(col_name: str) -> str:
             """
 
 
-def clicked_cell_func(col_name: list) -> str:
-    """Return a Java script function as a string to display a popup.
-
-    The popup contains the title and description of the data.
-    The Java script code will be configured in the config_options function.
-
-    Parameters
-    ----------
-    col_names: list
-        contains the list of column names of interest.
-
-    Returns
-    -------
-    str
-        return the JS code as a string.
-    """
-    contents = (
-        f"params.node.data.{col_name[0]} + '<br/>' + params.node.data.{col_name[1]}"
-    )
-    return f"""
-            function(params){{
-                confirm({contents});
-                return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>';
-            }};
-            """
-
-
 def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     """Configure the Aggrid object with dedicated functions for our data.
 
@@ -297,11 +270,6 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     # Add a JsCode that will add a hyperlink to the URL column
     gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
     gb.configure_column("URL", hide=True)
-    # Add a JsCode that will display the full content in a popup
-    gb.configure_columns(
-        ["Title", "Description"],
-        onCellDoubleClicked=JsCode(clicked_cell_func(["Title", "Description"])),
-    )
     # Build the dictionary that will contain all the configurations
     gridOptions = gb.build()
     return gridOptions
@@ -352,7 +320,7 @@ def display_search_bar(select_data: int) -> tuple:
     col_keyup, _, _ = st.columns([3, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
-    columns = st.columns([2 if i == 0 or i == 1 else 1 for i in range(10)])
+    columns = st.columns([2 if i == 0 or i == 1 or i == 9 else 1 for i in range(10)])
     with columns[0]:
         is_show = st.checkbox("Show all", key=select_data)
     return search, is_show, columns
@@ -368,7 +336,7 @@ def display_export_button(sel_row: list) -> None:
     """
     if sel_row:
         new_data = convert_data(sel_row)
-        today_date = datetime.now().strftime("%Y-%m-%d")
+        today_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         st.download_button(
             label="Export to tsv",
             data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
@@ -377,28 +345,63 @@ def display_export_button(sel_row: list) -> None:
         )
 
 
+def update_contents(sel_row):
+    selected_row = sel_row[st.session_state['cursor']]
+    nb_files = ""
+    if "# Files" in selected_row:
+        nb_files = "\# Files : " + str(selected_row["# Files"])
+    contents = f"""
+        **{selected_row["Dataset"]}**:
+        [{selected_row["ID"]}]({selected_row["URL"]})\n
+        {selected_row["Creation date"]}\n
+        ### **{selected_row["Title"]}**\n
+        ##### {selected_row["Authors"]}\n
+        {selected_row["Description"]}\n
+        {nb_files}
+    """
+    st.session_state['contents'] = contents
+
+
+def update_cursor(is_previous):
+    if is_previous :
+        st.session_state["cursor"] -= 1
+    else :
+        st.session_state["cursor"] += 1
+
+
+def fix_cursor(size_selected):
+    while st.session_state["cursor"]  >= size_selected :
+        st.session_state["cursor"] -= 1
+
+
 def display_details(sel_row: list) -> None:
     if 'cursor' not in st.session_state :
         st.session_state['cursor'] = 0
-    size_selected = len(sel_row) 
-    if size_selected != 0:
 
-        print("VALUES : ",st.session_state['cursor']," ",sel_row[st.session_state['cursor']])
-        st.sidebar.markdown(
-            "**" + sel_row[st.session_state['cursor']]["Title"] + "**", 
-            unsafe_allow_html=True
-        )
-        st.sidebar.write(sel_row[st.session_state['cursor']]["Description"])
-        if size_selected != 1 :
-            col_left, col_right = st.sidebar.columns([1, 1])
-            with col_left:
-                if st.session_state['cursor'] - 1 >= 0:
-                    previous = st.button("Previous")
-                    if previous:
-                        st.session_state['cursor'] -= 1
-            with col_right:
-                if st.session_state['cursor'] + 1 < size_selected:
-                    next = st.button("Next")
-                    if next:
-                        st.session_state['cursor'] += 1
-            st.sidebar.write(st.session_state['cursor'], "selected")
+    size_selected = len(sel_row)
+    if size_selected != 0:
+        fix_cursor(size_selected)
+        update_contents(sel_row)
+        cursor = st.session_state["cursor"]
+
+        col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
+        disabled_previous, disabled_next = False, False
+        with col_select:
+            st.write(cursor + 1, "/", size_selected,
+                "selected")
+        with col_previous:
+            disabled_previous = False if cursor - 1 >= 0 else True
+            st.button("⬅", on_click=update_cursor,
+                args=(True, ), key='previous', 
+                disabled=disabled_previous, use_container_width=True
+            )
+        with col_next:
+            disabled_next = False if cursor + 1 < size_selected else True
+            st.button("➡", on_click=update_cursor, 
+                args=(False,), key='next',
+                disabled=disabled_next, use_container_width=True
+            )
+        st.sidebar.markdown(st.session_state['contents'],
+            unsafe_allow_html=True)
+    else :
+        st.session_state['cursor'] = 0
