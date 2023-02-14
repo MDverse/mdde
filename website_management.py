@@ -229,7 +229,7 @@ def display_search_bar(select_data: int) -> tuple:
         the site.
     """
     st.title("MDverse")
-    placeholder = "Enter search term (for instance: POPC, Gromacs, CHARMM36)"
+    placeholder = "Enter search term (for instance: Covid, POPC, Gromacs, CHARMM36)"
     if select_data == 0:
         label_search = "Keywords search"
     elif select_data == 1:
@@ -241,7 +241,6 @@ def display_search_bar(select_data: int) -> tuple:
         search = st_keyup(label_search, placeholder=placeholder)
     with col_show:
         is_show = st.checkbox("Show all", key=10 + select_data)
-    columns = st.columns([3 if i == 9 else 2 if i == 0 else 1 for i in range(10)])
     return search, is_show, col_download
 
 
@@ -255,11 +254,11 @@ def display_export_button(sel_row: list) -> None:
     """
     if sel_row:
         new_data = convert_data(sel_row)
-        today_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         st.download_button(
             label="Export selection to tsv",
             data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
-            file_name=f"mdverse_{today_date}.tsv",
+            file_name=f"mdverse_{date_now}.tsv",
             mime="text/tsv",
         )
 
@@ -273,17 +272,13 @@ def update_contents(sel_row: list) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     selected_row = sel_row[st.session_state["cursor"]]
-    nb_files = ""
-    if "# Files" in selected_row:
-        nb_files = "\# Files : " + str(selected_row["# Files"])
     contents = f"""
         **{selected_row["Dataset"]}**:
         [{selected_row["ID"]}]({selected_row["URL"]})\n
         {selected_row["Creation date"]}\n
         ### **{selected_row["Title"]}**\n
         ##### {selected_row["Authors"]}\n
-        {selected_row["Description"]}\n
-        {nb_files}
+        {selected_row["Description"]}
     """
     st.session_state["contents"] = contents
 
