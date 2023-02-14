@@ -11,6 +11,7 @@ from st_aggrid import AgGrid
 import website_management as wm
 
 
+@st.cache_data
 def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFrame:
     """Search the data in the pd.DataFrame for the desired value.
 
@@ -146,24 +147,20 @@ def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> ob
     object
         returns a AgGrid object contains our data filtered.
     """
-    with columns[1]:
-        # Add a key to make the checkbox unique from other checkboxes
-        add_filter = st.checkbox("Add filters", key=select_data + 10)
     with columns[9]:
         page_size = st.selectbox(
             "Select rows", (10, 20, 30, 50, 100, 200, 250), index=1
         )
-    data_filtered = wm.filter_dataframe(results, add_filter)
-    st.write(len(data_filtered), "elements found")
+    st.write(len(results), "elements found")
     # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_gro(data_filtered, page_size)
+    gridOptions = config_options_gro(results, page_size)
     # Generate our Aggrid table and display it
     grid_table = AgGrid(
-        data_filtered,
+        results,
         gridOptions=gridOptions,
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
-        theme="alpine"
+        theme="alpine",
     )
     return grid_table
 
@@ -180,6 +177,7 @@ def user_interaction(select_data: int) -> None:
         contains a number (0, 1 or 2) that will allow the selection of data.
     """
     st.set_page_config(page_title="MDverse", layout="wide")
+    wm.load_css()
     data = wm.load_data()[select_data]
     search, is_show, columns = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)

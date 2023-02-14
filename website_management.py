@@ -2,14 +2,10 @@
 
 import streamlit as st
 import pandas as pd
-from pandas.api.types import (
-    is_categorical_dtype,
-    is_numeric_dtype,
-    is_object_dtype,
-)
 from st_keyup import st_keyup
 from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
+import streamlit_toggle as tog
 
 
 @st.cache_data
@@ -30,8 +26,7 @@ def load_data() -> tuple:
             dtype={"dataset_id": str},
         )
         tmp_dataset = pd.read_csv(
-            f"data/{name_rep}_datasets.tsv", delimiter="\t",
-            dtype={"dataset_id": str}
+            f"data/{name_rep}_datasets.tsv", delimiter="\t", dtype={"dataset_id": str}
         )
         tmp_data_merged = pd.merge(
             tmp_data_text,
@@ -43,8 +38,7 @@ def load_data() -> tuple:
         dfs_merged.append(tmp_data_merged)
     datasets = pd.concat(dfs_merged, ignore_index=True)
     gro = pd.read_csv(
-        f"data/gromacs_gro_files_info.tsv", delimiter="\t",
-        dtype={"dataset_id": str}
+        f"data/gromacs_gro_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
     )
     gro_data = pd.merge(
         gro,
@@ -54,8 +48,7 @@ def load_data() -> tuple:
         validate="many_to_one",
     )
     mdp = pd.read_csv(
-        f"data/gromacs_mdp_files_info.tsv", delimiter="\t",
-        dtype={"dataset_id": str}
+        f"data/gromacs_mdp_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
     )
     mdp_data = pd.merge(
         mdp,
@@ -76,8 +69,12 @@ def load_data() -> tuple:
     tuple
         returns an tuple contains pd.DataFrame object containing our datasets.
     """
-    datasets = pd.read_parquet("https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true")
-    gro = pd.read_parquet("https://github.com/MDverse/data/blob/master/gromacs_gro_files.parquet?raw=true")
+    datasets = pd.read_parquet(
+        "https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true"
+    )
+    gro = pd.read_parquet(
+        "https://github.com/MDverse/data/blob/master/gromacs_gro_files.parquet?raw=true"
+    )
     gro_data = pd.merge(
         gro,
         datasets,
@@ -85,7 +82,9 @@ def load_data() -> tuple:
         on=["dataset_id", "dataset_origin"],
         validate="many_to_one",
     )
-    mdp = pd.read_parquet("https://github.com/MDverse/data/blob/master/gromacs_mdp_files.parquet?raw=true")
+    mdp = pd.read_parquet(
+        "https://github.com/MDverse/data/blob/master/gromacs_mdp_files.parquet?raw=true"
+    )
     mdp_data = pd.merge(
         mdp,
         datasets,
@@ -117,85 +116,6 @@ def is_isoformat(dates: object) -> bool:
         except Exception:
             return False
     return True
-
-
-def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
-    """Add a UI on top of a dataframe to let viewers filter columns.
-
-    This slightly modified function was extracted from the following git.
-    https://github.com/tylerjrichards/st-filter-dataframe
-
-    Parameters
-    ----------
-    df: pd.DataFrame
-        original dataframe.
-    add_filter: bool
-        allows to know if the user wants to do a filter.
-
-    Returns
-    -------
-    pd.DataFrame
-        filtered dataframe.
-    """
-    if not add_filter:
-        return df
-
-    df: pd.DataFrame = df.copy()
-    tmp_col = {}
-    # Try to convert datetimes into a standard format (datetime, no timezone)
-    for col in df.columns:
-        if is_object_dtype(df[col]):
-            try:
-                tmp_col[col] = pd.to_datetime(df[col].copy())
-                df[col] = pd.to_datetime(df[col]).dt.strftime("%Y-%m-%d")
-            except Exception:
-                pass
-
-    modification_container = st.container()
-    with modification_container:
-        to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
-        for column in to_filter_columns:
-            left, right = st.columns((1, 20))
-            left.write("↳")
-            # Treat columns with < 10 unique values as categorical
-            if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
-                user_cat_input = right.multiselect(
-                    f"Values for {column}",
-                    df[column].unique(),
-                    default=list(df[column].unique()),
-                )
-                df = df[df[column].isin(user_cat_input)]
-            elif is_numeric_dtype(df[column]):
-                _min = float(df[column].min())
-                _max = float(df[column].max())
-                step = (_max - _min) / 100
-                user_num_input = right.slider(
-                    f"Values for {column}",
-                    _min,
-                    _max,
-                    (_min, _max),
-                    step=step,
-                )
-                df = df[df[column].between(*user_num_input)]
-            elif is_isoformat(df[column]):
-                user_date_input = right.date_input(
-                    f"Values for {column}",
-                    value=(
-                        tmp_col[column].min(),
-                        tmp_col[column].max(),
-                    ),
-                )
-                if len(user_date_input) == 2:
-                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
-                    start_date, end_date = user_date_input
-                    df = df.loc[tmp_col[column].between(start_date, end_date)]
-            else:
-                user_text_input = right.text_input(
-                    f"Substring or regex in {column}",
-                )
-                if user_text_input:
-                    df = df[df[column].str.contains(user_text_input, case=False)]
-    return df
 
 
 def content_cell_func() -> str:
@@ -317,12 +237,12 @@ def display_search_bar(select_data: int) -> tuple:
         label_search = "GRO files search"
     else:
         label_search = "MDP files search"
-    col_keyup, _, _ = st.columns([3, 1, 1])
+    col_keyup, col_show, _ = st.columns([3, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
-    columns = st.columns([2 if i == 0 or i == 1 or i == 9 else 1 for i in range(10)])
-    with columns[0]:
-        is_show = st.checkbox("Show all", key=select_data)
+    with col_show:
+        is_show = st.checkbox("Show all", key=10 + select_data)
+    columns = st.columns([3 if i == 9 else 2 if i == 0 else 1 for i in range(10)])
     return search, is_show, columns
 
 
@@ -331,22 +251,29 @@ def display_export_button(sel_row: list) -> None:
 
     Parameters
     ----------
-    grid_table: object
-        contains a list of dictionary of all data selected.
+    sel_row: list
+        contains the selected rows of our Aggrid array as a list of dictionary.
     """
     if sel_row:
         new_data = convert_data(sel_row)
         today_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         st.download_button(
-            label="Export to tsv",
+            label="Export selection to tsv",
             data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
             file_name=f"mdverse_{today_date}.tsv",
             mime="text/tsv",
         )
 
 
-def update_contents(sel_row):
-    selected_row = sel_row[st.session_state['cursor']]
+def update_contents(sel_row: list) -> None:
+    """Change the content display according to the cursor position.
+
+    Parameters
+    ----------
+    sel_row: list
+        contains the selected rows of our Aggrid array as a list of dictionary.
+    """
+    selected_row = sel_row[st.session_state["cursor"]]
     nb_files = ""
     if "# Files" in selected_row:
         nb_files = "\# Files : " + str(selected_row["# Files"])
@@ -359,24 +286,45 @@ def update_contents(sel_row):
         {selected_row["Description"]}\n
         {nb_files}
     """
-    st.session_state['contents'] = contents
+    st.session_state["contents"] = contents
 
 
-def update_cursor(is_previous):
-    if is_previous :
+def update_cursor(is_previous: bool) -> None:
+    """Change the value of the cursor by incrementing or decrementing.
+
+    Parameters
+    ----------
+    is_previous: bool
+        determine if it should increment the cursor or decrement.
+    """
+    if is_previous:
         st.session_state["cursor"] -= 1
-    else :
+    else:
         st.session_state["cursor"] += 1
 
 
-def fix_cursor(size_selected):
-    while st.session_state["cursor"]  >= size_selected :
+def fix_cursor(size_selected: int) -> None:
+    """Correct the cursor position according to the number of selected rows.
+
+    Parameters
+    ----------
+    size_selected: int
+        total number of selected rows.
+    """
+    while st.session_state["cursor"] >= size_selected:
         st.session_state["cursor"] -= 1
 
 
 def display_details(sel_row: list) -> None:
-    if 'cursor' not in st.session_state :
-        st.session_state['cursor'] = 0
+    """Show the details of the selected rows in the sidebar.
+
+    Parameters
+    ----------
+    sel_row: list
+        contains the selected rows of our Aggrid array as a list of dictionary.
+    """
+    if "cursor" not in st.session_state:
+        st.session_state["cursor"] = 0
 
     size_selected = len(sel_row)
     if size_selected != 0:
@@ -387,21 +335,55 @@ def display_details(sel_row: list) -> None:
         col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
         disabled_previous, disabled_next = False, False
         with col_select:
-            st.write(cursor + 1, "/", size_selected,
-                "selected")
+            st.write(cursor + 1, "/", size_selected, "selected")
         with col_previous:
             disabled_previous = False if cursor - 1 >= 0 else True
-            st.button("⬅", on_click=update_cursor,
-                args=(True, ), key='previous', 
-                disabled=disabled_previous, use_container_width=True
+            st.button(
+                "⬅",
+                on_click=update_cursor,
+                args=(True,),
+                key="previous",
+                disabled=disabled_previous,
+                use_container_width=True,
             )
         with col_next:
             disabled_next = False if cursor + 1 < size_selected else True
-            st.button("➡", on_click=update_cursor, 
-                args=(False,), key='next',
-                disabled=disabled_next, use_container_width=True
+            st.button(
+                "➡",
+                on_click=update_cursor,
+                args=(False,),
+                key="next",
+                disabled=disabled_next,
+                use_container_width=True,
             )
-        st.sidebar.markdown(st.session_state['contents'],
-            unsafe_allow_html=True)
-    else :
-        st.session_state['cursor'] = 0
+        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+    else:
+        st.session_state["cursor"] = 0
+
+
+def load_css() -> None:
+    """Load a css style."""
+    st.markdown(
+        """
+            <style>
+                .stCheckbox {
+                    position: absolute;
+                    top: 40px;
+                }
+
+                .stDownloadButton {
+                    position : absolute;
+                    top: 30px;
+                }
+
+                .stDownloadButton > button {
+                    width: 100%;
+                }
+
+                div.block-container.css-k1ih3n.egzxvld4 {
+                    padding-top : 20px;
+                }
+            </style>
+    """,
+        unsafe_allow_html=True,
+    )
