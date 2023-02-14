@@ -5,7 +5,6 @@ import pandas as pd
 from st_keyup import st_keyup
 from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
-import streamlit_toggle as tog
 
 
 @st.cache_data
@@ -364,26 +363,28 @@ def display_details(sel_row: list) -> None:
 def load_css() -> None:
     """Load a css style."""
     st.markdown(
-        """
-            <style>
-                .stCheckbox {
-                    position: absolute;
-                    top: 40px;
-                }
+    """
+        <style>
+            .stCheckbox {
+                position: absolute;
+                top: 40px;
+            }
 
-                .stDownloadButton {
-                    position : absolute;
-                    top: 33px;
-                }
+            .stDownloadButton {
+                position: absolute;
+                top: 33px;
+            }
 
-                .stDownloadButton > button {
-                    width: 100%;
-                }
+            .stDownloadButton > button {
+                width: 100%;
+            }
 
-                .block-container:first-of-type {
-                    padding-top : 20px;
-                }
-            </style>
+            .block-container:first-of-type {
+                padding-top: 20px;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+        </style>
     """,
         unsafe_allow_html=True,
     )
