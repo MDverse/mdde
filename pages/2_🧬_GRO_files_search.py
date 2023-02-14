@@ -1,9 +1,4 @@
-"""Our program is a streamlit application for exploring gro file data.
-
-There were extracted from unmoderated and generalized data such as Zenodo, etc.
-We propose an website allowing to facilitate the user's search in these MD
-data.
-"""
+"""Streamlit web app for exploring molecular dynamics (MD) data."""
 
 import streamlit as st
 import pandas as pd

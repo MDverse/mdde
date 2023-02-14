@@ -1,4 +1,4 @@
-"""This python file contains all the functions to help manage the site."""
+"""Helper functions to manage the Streamlit application."""
 
 import streamlit as st
 import pandas as pd
