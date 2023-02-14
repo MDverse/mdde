@@ -166,7 +166,7 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     data_filtered: pd.DataFrame
         contains our data filtered by a search.
     page_size: int
-
+        number of rows to display
 
     Returns
     -------
@@ -237,13 +237,13 @@ def display_search_bar(select_data: int) -> tuple:
         label_search = "GRO files search"
     else:
         label_search = "MDP files search"
-    col_keyup, col_show, _ = st.columns([3, 1, 1])
+    col_keyup, col_show, col_download = st.columns([3, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
     with col_show:
         is_show = st.checkbox("Show all", key=10 + select_data)
     columns = st.columns([3 if i == 9 else 2 if i == 0 else 1 for i in range(10)])
-    return search, is_show, columns
+    return search, is_show, col_download
 
 
 def display_export_button(sel_row: list) -> None:
@@ -373,14 +373,14 @@ def load_css() -> None:
 
                 .stDownloadButton {
                     position : absolute;
-                    top: 30px;
+                    top: 33px;
                 }
 
                 .stDownloadButton > button {
                     width: 100%;
                 }
 
-                div.block-container.css-k1ih3n.egzxvld4 {
+                .block-container:first-of-type {
                     padding-top : 20px;
                 }
             </style>

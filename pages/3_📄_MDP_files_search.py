@@ -126,27 +126,20 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
-def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> object:
+def display_AgGrid(results: pd.DataFrame) -> object:
     """Configure, create and display the AgGrid object.
 
     Parameters
     ----------
     results: pd.DataFrame
         a pandas dataframe filtred.
-    select_data: int
-        contains a number (0, 1 or 2) that will allow the selection of data.
-    columns: list
-        a list for the layout of the site.
 
     Returns
     -------
     object
         returns a AgGrid object contains our data filtered.
     """
-    with columns[0]:
-        page_size = st.selectbox(
-            "Select rows", (10, 20, 30, 50, 100, 200, 250), index=1
-        )
+    page_size = 20
     st.write(len(results), "elements found")
     # A dictionary containing all the configurations for our Aggrid objects
     gridOptions = config_options_mdp(results, page_size)
@@ -177,15 +170,13 @@ def user_interaction(select_data: int) -> None:
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
     data = wm.load_data()[select_data]
-    search, is_show, columns = wm.display_search_bar(select_data)
+    search, is_show, col_download = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
-        grid_table = display_AgGrid(
-            results=results, columns=columns, select_data=select_data
-        )
+        grid_table = display_AgGrid(results)
         if grid_table:
             sel_row = grid_table["selected_rows"]
-            with columns[9]:
+            with col_download:
                 wm.display_export_button(sel_row)
             wm.display_details(sel_row)
     elif search != "":
