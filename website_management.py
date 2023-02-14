@@ -232,12 +232,13 @@ def display_search_bar(select_data: str="datasets") -> tuple:
     """
     st.title("MDverse")
     placeholder = "Enter search term (for instance: Covid, POPC, Gromacs, CHARMM36)"
-    if select_data == "gro":
+    label_search = ""
+    if select_data == "datasets":
+        label_search = "Datasets search"
+    elif select_data == "gro":
         label_search = ".gro files search"
     elif select_data == "mdp":
         label_search = ".mdp files search"
-    else:
-        label_search = "Datasets search"
     col_keyup, col_show, col_download = st.columns([3, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
