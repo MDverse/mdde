@@ -2,27 +2,23 @@
 
 import streamlit as st
 
+import website_management as wm
+
 st.set_page_config(page_title="MDverse", page_icon="🔎", layout="wide")
 
-st.write("# Welcome to MDverse! 🔎")
+st.write("# Welcome to MDverse data explorer 🔎")
 
 st.sidebar.success("Select the type of MD search.")
 
-st.markdown(
-    """
-    Streamlit is an open-source app framework built specifically for
-    Machine Learning and Data Science projects.
-    **👈 Select a demo from the sidebar** to see some examples
-    of what Streamlit can do!
-    ### Want to learn more?
-    - Check out [streamlit.io](https://streamlit.io)
-    - Jump into our [documentation](https://docs.streamlit.io)
-    - Ask a question in our [community
-        forums](https://discuss.streamlit.io)
-    ### See more complex demos
-    - Use a neural net to [analyze the Udacity Self-driving Car Image
-        Dataset](https://github.com/streamlit/demo-self-driving)
-    - Explore a [New York City rideshare dataset]
-        (https://github.com/streamlit/demo-uber-nyc-pickups)
-"""
+datasets_df, gro_df, mdp_df = wm.load_data()
+
+dataset_agg = (datasets_df
+ .groupby("dataset_origin")
+ .agg(
+     number_of_datasets=("dataset_id", "nunique"),
+     date_first_dataset=("date_creation", "min"),
+     date_last_dataset=("date_creation", "max"),
+ )
 )
+dataset_agg.loc["total"] = dataset_agg.sum(numeric_only=True)
+st.dataframe(dataset_agg.style.format(thousands=",", precision=0))
