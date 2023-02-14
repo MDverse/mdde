@@ -3,6 +3,6 @@ scipy
 pandas
 pyarrow
 matplotlib
-streamlit
+streamlit>=1.18
 streamlit-aggrid
 streamlit-keyup
