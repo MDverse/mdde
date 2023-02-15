@@ -168,10 +168,13 @@ def user_interaction(select_data: int) -> None:
     wm.load_css()
     select_data = "gro"
     data = wm.load_data()[select_data]
-    search, is_show, col_download = wm.display_search_bar(select_data)
+    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
-        grid_table = display_AgGrid(results)
+        with col_filter:
+            add_filter = st.checkbox("Add filter")
+        data_filtered = wm.filter_dataframe(results, add_filter)
+        grid_table = display_AgGrid(data_filtered)
         if grid_table:
             sel_row = grid_table["selected_rows"]
             with col_download:

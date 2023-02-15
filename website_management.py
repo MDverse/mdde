@@ -2,6 +2,11 @@
 
 import streamlit as st
 import pandas as pd
+from pandas.api.types import (
+    is_categorical_dtype,
+    is_numeric_dtype,
+    is_object_dtype,
+)
 from st_keyup import st_keyup
 from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
@@ -121,6 +126,83 @@ def is_isoformat(dates: object) -> bool:
     return True
 
 
+def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
+    """Add a UI on top of a dataframe to let viewers filter columns.
+    This slightly modified function was extracted from the following git. 
+    https://github.com/tylerjrichards/st-filter-dataframe
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        original dataframe.
+    add_filter : bool
+        allows to know if the user wants to do a filter.
+    Returns
+    -------
+    pd.DataFrame
+            Filtered dataframe
+    """
+    if not add_filter:
+        return df
+
+    df: pd.DataFrame = df.copy()
+    tmp_col = {}
+    # Try to convert datetimes into a standard format (datetime, no timezone)
+    for col in df.columns:
+        if is_object_dtype(df[col]):
+            try:
+                tmp_col[col] = pd.to_datetime(df[col].copy())
+                df[col] = pd.to_datetime(df[col]).dt.strftime("%Y-%m-%d")
+            except Exception:
+                pass
+
+    modification_container = st.container()
+    with modification_container:
+        to_filter_columns = st.multiselect("Filter dataframe on", df.columns[:-1])
+        for column in to_filter_columns:
+            left, right = st.columns((1, 20))
+            left.write("↳")
+            # Treat columns with < 10 unique values as categorical
+            if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+                user_cat_input = right.multiselect(
+                    f"Values for {column}",
+                    df[column].unique(),
+                    default=list(df[column].unique()),
+                )
+                df = df[df[column].isin(user_cat_input)]
+            elif is_numeric_dtype(df[column]):
+                _min = float(df[column].min())
+                _max = float(df[column].max())
+                step = (_max - _min) / 100
+                user_num_input = right.slider(
+                    f"Values for {column}",
+                    _min,
+                    _max,
+                    (_min, _max),
+                    step=step,
+                )
+                df = df[df[column].between(*user_num_input)]
+            elif is_isoformat(df[column]):
+                user_date_input = right.date_input(
+                    f"Values for {column}",
+                    value=(
+                        tmp_col[column].min(),
+                        tmp_col[column].max(),
+                    ),
+                )
+                if len(user_date_input) == 2:
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    start_date, end_date = user_date_input
+                    df = df.loc[tmp_col[column].between(start_date, end_date)]
+            else:
+                user_text_input = right.text_input(
+                    f"Substring or regex in {column}",
+                )
+                if user_text_input:
+                    df = df[df[column].str.contains(user_text_input, case=False, na=False)]
+    return df
+
+
 def content_cell_func() -> str:
     """Return a Java script function as a string to display a tooltip.
 
@@ -161,12 +243,12 @@ def link_cell_func(col_name: str) -> str:
             """
 
 
-def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
+def config_options(results: pd.DataFrame, page_size: int) -> list:
     """Configure the Aggrid object with dedicated functions for our data.
 
     Parameters
     ----------
-    data_filtered: pd.DataFrame
+    results: pd.DataFrame
         contains our data filtered by a search.
     page_size: int
         number of rows to display
@@ -178,7 +260,7 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
         configuration for our Aggrid object.
     """
     # Convert our dataframe into a GridOptionBuilder object
-    gb = GridOptionsBuilder.from_dataframe(data_filtered)
+    gb = GridOptionsBuilder.from_dataframe(results)
     # Add a checkbox for each row
     gb.configure_selection(selection_mode="multiple", use_checkbox=True)
     gb.configure_pagination(
@@ -186,9 +268,11 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     )
     # Add a checkbox in the first column to select all columns
     gb.configure_column("Dataset", headerCheckboxSelection=True)
+    # Remove filters included in Aggrid
+    gb.configure_default_column(filterable=False, sortable=False, suppressMenu=True)
     # Add a JsCode that will display the content when hovering with the mouse
     gb.configure_columns(
-        data_filtered.columns, cellRenderer=JsCode(content_cell_func())
+        results.columns, cellRenderer=JsCode(content_cell_func())
     )
     # Add a JsCode that will add a hyperlink to the URL column
     gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
@@ -243,12 +327,12 @@ def display_search_bar(select_data: str="datasets") -> tuple:
         label_search = ".gro files search"
     elif select_data == "mdp":
         label_search = ".mdp files search"
-    col_keyup, col_show, col_download = st.columns([3, 1, 1])
+    col_keyup, col_show, col_filter, col_download = st.columns([3, 1, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
     with col_show:
         is_show = st.checkbox("Show all", key=select_data)
-    return search, is_show, col_download
+    return search, is_show, col_filter, col_download
 
 
 def display_export_button(sel_row: list) -> None:
