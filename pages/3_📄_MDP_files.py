@@ -164,8 +164,9 @@ def user_interaction(select_data: int) -> None:
     """
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
+    select_data = "mdp"
     data = wm.load_data()[select_data]
-    search, is_show, col_download = wm.display_search_bar("mdp")
+    search, is_show, col_download = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         grid_table = display_AgGrid(results)

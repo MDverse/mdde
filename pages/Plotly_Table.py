@@ -1,9 +1,16 @@
-"""Streamlit web app for exploring molecular dynamics (MD) data."""
+"""Our program is a streamlit app for exploring molecular dynamics (MD) data.
+
+There were extracted from unmoderated and generalized data such as Zenodo, etc.
+We propose an website allowing to facilitate the user's search in these MD
+data.
+"""
 
 import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid
 import website_management as wm
+from dash import Dash, dash_table, dcc, html
+from dash.dependencies import Input, Output
 
 
 @st.cache_data
@@ -108,20 +115,27 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
-def display_AgGrid(results: pd.DataFrame) -> object:
+def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> object:
     """Configure, create and display the AgGrid object.
 
     Parameters
     ----------
     results: pd.DataFrame
         a pandas dataframe filtred.
+    select_data: int
+        contains a number (0, 1 or 2) that will allow the selection of data.
+    columns: list
+        a list for the layout of the site.
 
     Returns
     -------
     object
         returns a AgGrid object contains our data filtered.
     """
-    page_size = 20
+    with columns[0]:
+        page_size = st.selectbox(
+            "Select rows", (10, 20, 30, 50, 100, 200, 250), index=1
+        )
     st.write(len(results), "elements found")
     # A dictionary containing all the configurations for our Aggrid objects
     gridOptions = config_options_keywords(results, page_size)
@@ -149,15 +163,16 @@ def user_interaction(select_data: int) -> None:
     """
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
-    select_data = "datasets"
     data = wm.load_data()[select_data]
-    search, is_show, col_download = wm.display_search_bar(select_data)
+    search, is_show, columns = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
-        grid_table = display_AgGrid(results)
+        grid_table = display_AgGrid(
+            results=results, columns=columns, select_data=select_data
+        )
         if grid_table:
             sel_row = grid_table["selected_rows"]
-            with col_download:
+            with columns[9]:
                 wm.display_export_button(sel_row)
             wm.display_details(sel_row)
     elif search != "":

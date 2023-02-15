@@ -60,14 +60,15 @@ def load_data() -> tuple:
 
 
 @st.cache_data
-def load_data() -> tuple:
+def load_data() -> dict:
     """Retrieve our data and loads it into the pd.DataFrame object.
 
     Returns
     -------
-    tuple
-        returns an tuple contains pd.DataFrame object containing our datasets.
+    dict
+        returns a dict contains pd.DataFrame object containing our datasets.
     """
+    dfs = {}
     datasets = pd.read_parquet(
         "https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true"
     )
@@ -91,7 +92,10 @@ def load_data() -> tuple:
         on=["dataset_id", "dataset_origin"],
         validate="many_to_one",
     )
-    return datasets, gro_data, mdp_data
+    dfs["datasets"] = datasets
+    dfs["gro"] = gro_data
+    dfs["mdp"] = mdp_data
+    return dfs
 
 
 def is_isoformat(dates: object) -> bool:
