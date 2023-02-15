@@ -127,8 +127,8 @@ def is_isoformat(dates: object) -> bool:
 
 
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
-    """Add a UI on top of a dataframe to let viewers filter columns.
-    This slightly modified function was extracted from the following git.
+    """Add a UI on top of a dataframe to let user filter columns.
+    This function is based on the code from the following repository:
     https://github.com/tylerjrichards/st-filter-dataframe
 
     Parameters
@@ -136,7 +136,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     df : pd.DataFrame
         original dataframe.
     add_filter : bool
-        allows to know if the user wants to do a filter.
+        tells if the user wants to apply filter.
+
     Returns
     -------
     pd.DataFrame
@@ -145,7 +146,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     if not add_filter:
         return df
 
-    df: pd.DataFrame = df.copy()
+    df = df.copy()
     tmp_col = {}
     # Try to convert datetimes into a standard format (datetime, no timezone)
     for col in df.columns:
@@ -156,11 +157,11 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.container()
+    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
     with modification_container:
-        to_filter_columns = st.multiselect("Filter dataframe on", df.columns[:-1])
+        to_filter_columns = st.multiselect(label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
         for column in to_filter_columns:
-            left, right = st.columns((1, 20))
+            left, right, _ = st.columns((1, 20, 5))
             left.write("↳")
             # Treat columns with < 10 unique values as categorical
             if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
