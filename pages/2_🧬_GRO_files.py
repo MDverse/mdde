@@ -125,26 +125,26 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
-def display_AgGrid(results: pd.DataFrame) -> object:
+def display_AgGrid(data_filtered: pd.DataFrame) -> object:
     """Configure, create and display the AgGrid object.
 
     Parameters
     ----------
-    results: pd.DataFrame
+    data_filtered: pd.DataFrame
         a pandas dataframe filtred.
 
     Returns
     -------
     object
-        returns a AgGrid object contains our data filtered.
+        returns a AgGrid object contains our data filtered and some options.
     """
     page_size = 20
-    st.write(len(results), "elements found")
+    st.write(len(data_filtered), "elements found")
     # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_gro(results, page_size)
+    gridOptions = config_options_gro(data_filtered, page_size)
     # Generate our Aggrid table and display it
     grid_table = AgGrid(
-        results,
+        data_filtered,
         gridOptions=gridOptions,
         allow_unsafe_jscode=True,
         fit_columns_on_grid_load=True,
@@ -153,16 +153,11 @@ def display_AgGrid(results: pd.DataFrame) -> object:
     return grid_table
 
 
-def user_interaction(select_data: int) -> None:
+def user_interaction() -> None:
     """Control the streamlit application.
 
     Allows interaction between the user and our informational data from MD
     data.
-
-    Parameters
-    ----------
-    select_data: int
-        contains a number (0, 1 or 2) that will allow the selection of data.
     """
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
@@ -185,4 +180,4 @@ def user_interaction(select_data: int) -> None:
 
 
 if __name__ == "__main__":
-    user_interaction(1)
+    user_interaction()

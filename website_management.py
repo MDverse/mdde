@@ -128,7 +128,7 @@ def is_isoformat(dates: object) -> bool:
 
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     """Add a UI on top of a dataframe to let viewers filter columns.
-    This slightly modified function was extracted from the following git. 
+    This slightly modified function was extracted from the following git.
     https://github.com/tylerjrichards/st-filter-dataframe
 
     Parameters
@@ -199,7 +199,9 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     f"Substring or regex in {column}",
                 )
                 if user_text_input:
-                    df = df[df[column].str.contains(user_text_input, case=False, na=False)]
+                    df = df[
+                        df[column].str.contains(user_text_input, case=False, na=False)
+                    ]
     return df
 
 
@@ -271,9 +273,7 @@ def config_options(results: pd.DataFrame, page_size: int) -> list:
     # Remove filters included in Aggrid
     gb.configure_default_column(filterable=False, sortable=False, suppressMenu=True)
     # Add a JsCode that will display the content when hovering with the mouse
-    gb.configure_columns(
-        results.columns, cellRenderer=JsCode(content_cell_func())
-    )
+    gb.configure_columns(results.columns, cellRenderer=JsCode(content_cell_func()))
     # Add a JsCode that will add a hyperlink to the URL column
     gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
     gb.configure_column("URL", hide=True)
@@ -302,7 +302,7 @@ def convert_data(sel_row: list) -> pd.DataFrame:
     return to_export
 
 
-def display_search_bar(select_data: str="datasets") -> tuple:
+def display_search_bar(select_data: str = "datasets") -> tuple:
     """Configure the display and the parameters of the website.
 
     Parameters
@@ -449,7 +449,7 @@ def display_details(sel_row: list) -> None:
 def load_css() -> None:
     """Load a css style."""
     st.markdown(
-    """
+        """
         <style>
             .stCheckbox {
                 position: absolute;
