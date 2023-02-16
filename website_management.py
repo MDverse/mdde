@@ -272,7 +272,7 @@ def config_options(results: pd.DataFrame, page_size: int) -> list:
     # Add a checkbox in the first column to select all columns
     gb.configure_column("Dataset", headerCheckboxSelection=True)
     # Remove filters included in Aggrid
-    gb.configure_default_column(filterable=False, sortable=False, suppressMenu=True)
+    gb.configure_default_column(filterable=False, sortable=True, suppressMenu=True)
     # Add a JsCode that will display the content when hovering with the mouse
     gb.configure_columns(results.columns, cellRenderer=JsCode(content_cell_func()))
     # Add a JsCode that will add a hyperlink to the URL column
