@@ -10,7 +10,7 @@ st.write("# Welcome to MDverse data explorer 🔎")
 
 st.sidebar.success("⬆️ Select the item you want to search for.")
 
-datasets_df, gro_df, mdp_df = wm.load_data()
+datasets_df = wm.load_data()["datasets"]
 
 dataset_agg = (datasets_df
  .groupby("dataset_origin")

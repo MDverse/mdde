@@ -2,6 +2,11 @@
 
 import streamlit as st
 import pandas as pd
+from pandas.api.types import (
+    is_categorical_dtype,
+    is_numeric_dtype,
+    is_object_dtype,
+)
 from st_keyup import st_keyup
 from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
@@ -60,14 +65,15 @@ def load_data() -> tuple:
 
 
 @st.cache_data
-def load_data() -> tuple:
+def load_data() -> dict:
     """Retrieve our data and loads it into the pd.DataFrame object.
 
     Returns
     -------
-    tuple
-        returns an tuple contains pd.DataFrame object containing our datasets.
+    dict
+        returns a dict contains pd.DataFrame object containing our datasets.
     """
+    dfs = {}
     datasets = pd.read_parquet(
         "https://github.com/MDverse/data/blob/master/datasets.parquet?raw=true"
     )
@@ -91,7 +97,10 @@ def load_data() -> tuple:
         on=["dataset_id", "dataset_origin"],
         validate="many_to_one",
     )
-    return datasets, gro_data, mdp_data
+    dfs["datasets"] = datasets
+    dfs["gro"] = gro_data
+    dfs["mdp"] = mdp_data
+    return dfs
 
 
 def is_isoformat(dates: object) -> bool:
@@ -115,6 +124,86 @@ def is_isoformat(dates: object) -> bool:
         except Exception:
             return False
     return True
+
+
+def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
+    """Add a UI on top of a dataframe to let user filter columns.
+    This function is based on the code from the following repository:
+    https://github.com/tylerjrichards/st-filter-dataframe
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        original dataframe.
+    add_filter : bool
+        tells if the user wants to apply filter.
+
+    Returns
+    -------
+    pd.DataFrame
+            Filtered dataframe
+    """
+    if not add_filter:
+        return df
+
+    df = df.copy()
+    tmp_col = {}
+    # Try to convert datetimes into a standard format (datetime, no timezone)
+    for col in df.columns:
+        if is_object_dtype(df[col]):
+            try:
+                tmp_col[col] = pd.to_datetime(df[col].copy())
+                df[col] = pd.to_datetime(df[col]).dt.strftime("%Y-%m-%d")
+            except Exception:
+                pass
+
+    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
+    with modification_container:
+        to_filter_columns = st.multiselect(label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
+        for column in to_filter_columns:
+            left, right, _ = st.columns((1, 20, 5))
+            left.write("↳")
+            # Treat columns with < 10 unique values as categorical
+            if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+                user_cat_input = right.multiselect(
+                    f"Values for {column}",
+                    df[column].unique(),
+                    default=list(df[column].unique()),
+                )
+                df = df[df[column].isin(user_cat_input)]
+            elif is_numeric_dtype(df[column]):
+                _min = float(df[column].min())
+                _max = float(df[column].max())
+                step = (_max - _min) / 100
+                user_num_input = right.slider(
+                    f"Values for {column}",
+                    _min,
+                    _max,
+                    (_min, _max),
+                    step=step,
+                )
+                df = df[df[column].between(*user_num_input)]
+            elif is_isoformat(df[column]):
+                user_date_input = right.date_input(
+                    f"Values for {column}",
+                    value=(
+                        tmp_col[column].min(),
+                        tmp_col[column].max(),
+                    ),
+                )
+                if len(user_date_input) == 2:
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    start_date, end_date = user_date_input
+                    df = df.loc[tmp_col[column].between(start_date, end_date)]
+            else:
+                user_text_input = right.text_input(
+                    f"Substring or regex in {column}",
+                )
+                if user_text_input:
+                    df = df[
+                        df[column].str.contains(user_text_input, case=False, na=False)
+                    ]
+    return df
 
 
 def content_cell_func() -> str:
@@ -157,12 +246,12 @@ def link_cell_func(col_name: str) -> str:
             """
 
 
-def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
+def config_options(results: pd.DataFrame, page_size: int) -> list:
     """Configure the Aggrid object with dedicated functions for our data.
 
     Parameters
     ----------
-    data_filtered: pd.DataFrame
+    results: pd.DataFrame
         contains our data filtered by a search.
     page_size: int
         number of rows to display
@@ -174,7 +263,7 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
         configuration for our Aggrid object.
     """
     # Convert our dataframe into a GridOptionBuilder object
-    gb = GridOptionsBuilder.from_dataframe(data_filtered)
+    gb = GridOptionsBuilder.from_dataframe(results)
     # Add a checkbox for each row
     gb.configure_selection(selection_mode="multiple", use_checkbox=True)
     gb.configure_pagination(
@@ -182,10 +271,10 @@ def config_options(data_filtered: pd.DataFrame, page_size: int) -> list:
     )
     # Add a checkbox in the first column to select all columns
     gb.configure_column("Dataset", headerCheckboxSelection=True)
+    # Remove filters included in Aggrid
+    gb.configure_default_column(filterable=False, sortable=True, suppressMenu=True)
     # Add a JsCode that will display the content when hovering with the mouse
-    gb.configure_columns(
-        data_filtered.columns, cellRenderer=JsCode(content_cell_func())
-    )
+    gb.configure_columns(results.columns, cellRenderer=JsCode(content_cell_func()))
     # Add a JsCode that will add a hyperlink to the URL column
     gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
     gb.configure_column("URL", hide=True)
@@ -214,7 +303,7 @@ def convert_data(sel_row: list) -> pd.DataFrame:
     return to_export
 
 
-def display_search_bar(select_data: str="datasets") -> tuple:
+def display_search_bar(select_data: str = "datasets") -> tuple:
     """Configure the display and the parameters of the website.
 
     Parameters
@@ -239,12 +328,12 @@ def display_search_bar(select_data: str="datasets") -> tuple:
         label_search = ".gro files search"
     elif select_data == "mdp":
         label_search = ".mdp files search"
-    col_keyup, col_show, col_download = st.columns([3, 1, 1])
+    col_keyup, col_show, col_filter, col_download = st.columns([3, 1, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
     with col_show:
         is_show = st.checkbox("Show all", key=select_data)
-    return search, is_show, col_download
+    return search, is_show, col_filter, col_download
 
 
 def display_export_button(sel_row: list) -> None:
@@ -266,7 +355,7 @@ def display_export_button(sel_row: list) -> None:
         )
 
 
-def update_contents(sel_row: list) -> None:
+def update_content(sel_row: list) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
@@ -275,15 +364,15 @@ def update_contents(sel_row: list) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     selected_row = sel_row[st.session_state["cursor"]]
-    contents = f"""
-        **{selected_row["Dataset"]}**:
-        [{selected_row["ID"]}]({selected_row["URL"]})\n
-        {selected_row["Creation date"]}\n
-        ### **{selected_row["Title"]}**\n
-        ##### {selected_row["Authors"]}\n
-        {selected_row["Description"]}
+    content = f"""
+        **Dataset:**
+        [{selected_row["Dataset"]} {selected_row["ID"]}]({selected_row["URL"]})<br />
+        **Creation date:** {selected_row["Creation date"]}<br />
+        **Author(s):** {selected_row["Authors"]}<br />
+        **Title:** *{selected_row["Title"]}*<br />
+        **Description:**<br /> {selected_row["Description"]}
     """
-    st.session_state["contents"] = contents
+    st.session_state["content"] = content
 
 
 def update_cursor(is_previous: bool) -> None:
@@ -326,7 +415,7 @@ def display_details(sel_row: list) -> None:
     size_selected = len(sel_row)
     if size_selected != 0:
         fix_cursor(size_selected)
-        update_contents(sel_row)
+        update_content(sel_row)
         cursor = st.session_state["cursor"]
 
         col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
@@ -353,7 +442,7 @@ def display_details(sel_row: list) -> None:
                 disabled=disabled_next,
                 use_container_width=True,
             )
-        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+        st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
         st.session_state["cursor"] = 0
 
@@ -361,7 +450,7 @@ def display_details(sel_row: list) -> None:
 def load_css() -> None:
     """Load a css style."""
     st.markdown(
-    """
+        """
         <style>
             .stCheckbox {
                 position: absolute;
