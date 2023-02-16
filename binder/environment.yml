@@ -10,7 +10,6 @@ dependencies:
     - python=3.9
     - pip
     - jupyterlab=3
-    - plotly
     - pyyaml
     # linters and more
     - pylint
