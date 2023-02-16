@@ -355,7 +355,7 @@ def display_export_button(sel_row: list) -> None:
         )
 
 
-def update_contents(sel_row: list) -> None:
+def update_content(sel_row: list) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
@@ -364,15 +364,15 @@ def update_contents(sel_row: list) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     selected_row = sel_row[st.session_state["cursor"]]
-    contents = f"""
-        **{selected_row["Dataset"]}**:
-        [{selected_row["ID"]}]({selected_row["URL"]})\n
-        {selected_row["Creation date"]}\n
-        ### **{selected_row["Title"]}**\n
-        ##### {selected_row["Authors"]}\n
-        {selected_row["Description"]}
+    content = f"""
+        **Dataset:**
+        [{selected_row["Dataset"]} {selected_row["ID"]}]({selected_row["URL"]})<br />
+        **Creation date:** {selected_row["Creation date"]}<br />
+        **Author(s):** {selected_row["Authors"]}<br />
+        **Title:** *{selected_row["Title"]}*<br />
+        **Description:**<br /> {selected_row["Description"]}
     """
-    st.session_state["contents"] = contents
+    st.session_state["content"] = content
 
 
 def update_cursor(is_previous: bool) -> None:
@@ -415,7 +415,7 @@ def display_details(sel_row: list) -> None:
     size_selected = len(sel_row)
     if size_selected != 0:
         fix_cursor(size_selected)
-        update_contents(sel_row)
+        update_content(sel_row)
         cursor = st.session_state["cursor"]
 
         col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
@@ -442,7 +442,7 @@ def display_details(sel_row: list) -> None:
                 disabled=disabled_next,
                 use_container_width=True,
             )
-        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+        st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
         st.session_state["cursor"] = 0
 
