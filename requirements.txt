@@ -6,3 +6,5 @@ matplotlib
 streamlit>=1.18
 streamlit-aggrid
 streamlit-keyup
+bokeh
+streamlit_bokeh_events
