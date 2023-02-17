@@ -4,6 +4,9 @@ import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridUpdateMode
 import website_management as wm
+from bokeh.models import ColumnDataSource, CustomJS
+from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
+from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
@@ -151,6 +154,61 @@ def display_AgGrid(data_filtered: pd.DataFrame) -> object:
     return grid_table
 
 
+def display_bokeh(data_filtered: pd.DataFrame) -> list:
+    st.write(len(data_filtered), "elements found")
+    if "data" not in st.session_state:
+        st.session_state["changed"] = False
+        st.session_state["data"] = data_filtered
+    
+    source = ColumnDataSource(data_filtered)
+    
+    if (not data_filtered.equals(st.session_state["data"])) :
+        st.session_state["changed"] = True
+        st.session_state["data"] = data_filtered
+    else : 
+        st.session_state["changed"] = False
+    
+    wrap_fmt = HTMLTemplateFormatter(template="""<span style='word-break: break-all;'> <%=value %></span>""")
+    
+    columns = [TableColumn(field=col_name, title=col_name, formatter=wrap_fmt) for col_name in data_filtered.columns]
+    columns.pop()
+    
+    source.selected.js_on_change(
+        "indices",
+        CustomJS(
+                args=dict(source=source),
+                code="""
+                document.dispatchEvent(
+                    new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
+                )
+                """
+        )
+    )
+    
+    viewport_height = max(550, len(data_filtered)//10)
+    
+    datatable = DataTable(
+        source=source, 
+        columns=columns,
+        height=viewport_height,
+        selectable="checkbox",
+        index_position=None,
+        sizing_mode="stretch_both",
+        row_height=45
+    )
+    
+    bokeh_table = streamlit_bokeh_events(
+        bokeh_plot=datatable,
+        events="INDEX_SELECT",
+        key="bokeh_table",
+        refresh_on_update=st.session_state["changed"],
+        debounce_time=0,
+        override_height=viewport_height+5,
+    )
+    
+    return bokeh_table
+
+
 def user_interaction() -> None:
     """Control the streamlit application.
 
@@ -167,12 +225,18 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        grid_table = display_AgGrid(data_filtered)
-        if grid_table:
-            sel_row = grid_table["selected_rows"]
+        #grid_table = display_AgGrid(data_filtered)
+        bokeh_table = display_bokeh(data_filtered)
+        # if grid_table:
+        #     sel_row = grid_table["selected_rows"]
+        #     with col_download:
+        #         wm.display_export_button(sel_row)
+        #     wm.display_details(sel_row)
+        if bokeh_table:
+            sel_row = bokeh_table.get("INDEX_SELECT")
             with col_download:
-                wm.display_export_button(sel_row)
-            wm.display_details(sel_row)
+                wm.display_export_button(sel_row, data_filtered)
+            wm.display_details(sel_row, data_filtered)
     elif search != "":
         st.write("No result found.")
 

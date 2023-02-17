@@ -336,7 +336,7 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     return search, is_show, col_filter, col_download
 
 
-def display_export_button(sel_row: list) -> None:
+def display_export_button(sel_row: list, data_filtered) -> None:
     """Add a download button to export the selected data from the AgGrid table.
 
     Parameters
@@ -345,7 +345,7 @@ def display_export_button(sel_row: list) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     if sel_row:
-        new_data = convert_data(sel_row)
+        new_data = data_filtered
         date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         st.download_button(
             label="Export selection to tsv",
@@ -355,7 +355,7 @@ def display_export_button(sel_row: list) -> None:
         )
 
 
-def update_contents(sel_row: list) -> None:
+def update_contents(sel_row: list, data_filtered) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
@@ -364,13 +364,14 @@ def update_contents(sel_row: list) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     selected_row = sel_row[st.session_state["cursor"]]
+    data = data_filtered.iloc[selected_row]
     contents = f"""
-        **{selected_row["Dataset"]}**:
-        [{selected_row["ID"]}]({selected_row["URL"]})\n
-        {selected_row["Creation date"]}\n
-        ### **{selected_row["Title"]}**\n
-        ##### {selected_row["Authors"]}\n
-        {selected_row["Description"]}
+        **{data["Dataset"]}**:
+        [{data["ID"]}]({data["URL"]})\n
+        {data["Creation date"]}\n
+        ### **{data["Title"]}**\n
+        ##### {data["Authors"]}\n
+        {data["Description"]}
     """
     st.session_state["contents"] = contents
 
@@ -401,7 +402,7 @@ def fix_cursor(size_selected: int) -> None:
         st.session_state["cursor"] -= 1
 
 
-def display_details(sel_row: list) -> None:
+def display_details(sel_row: list, data_filtered) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
@@ -413,9 +414,10 @@ def display_details(sel_row: list) -> None:
         st.session_state["cursor"] = 0
 
     size_selected = len(sel_row)
+    print(len(sel_row))
     if size_selected != 0:
         fix_cursor(size_selected)
-        update_contents(sel_row)
+        update_contents(sel_row, data_filtered)
         cursor = st.session_state["cursor"]
 
         col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])

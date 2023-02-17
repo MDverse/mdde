@@ -8,15 +8,13 @@ data.
 import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid
-import website_management as wm
-import plotly.graph_objects as go
-from bokeh.plotting import figure
+import management_bokeh as wm
 from bokeh.models import ColumnDataSource, CustomJS
 from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
 from streamlit_bokeh_events import streamlit_bokeh_events
+from streamlit_profiler import Profiler
 
 
-@st.cache_data
 def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFrame:
     """Search the data in the pd.DataFrame for the desired value.
 
@@ -153,48 +151,71 @@ def display_AgGrid(data_filtered: pd.DataFrame) -> object:
     # A dictionary containing all the configurations for our Aggrid objects
     gridOptions = config_options_gro(data_filtered, page_size)
     # Generate our Aggrid table and display it
-    # grid_table = AgGrid(
-    #     data_filtered,
-    #     gridOptions=gridOptions,
-    #     allow_unsafe_jscode=True,
-    #     fit_columns_on_grid_load=True,
-    #     theme="alpine",
+    grid_table = AgGrid(
+        data_filtered,
+        gridOptions=gridOptions,
+        allow_unsafe_jscode=True,
+        fit_columns_on_grid_load=True,
+        theme="alpine",
+    )
+    return grid_table
+    
+    # if "data" not in st.session_state:
+    #     st.session_state["changed"] = False
+    #     st.session_state["data"] = data_filtered
+    
+    # source = ColumnDataSource(data_filtered)
+    
+    # if (not data_filtered.equals(st.session_state["data"])) :
+    #     st.session_state["changed"] = True
+    #     st.session_state["data"] = data_filtered
+    # else : 
+    #     st.session_state["changed"] = False
+    
+    # wrap_fmt = HTMLTemplateFormatter(template="""<span style='word-break: break-all;'> <%=value %></span>""")
+    # link_fmt = HTMLTemplateFormatter(template="""
+    #     <a href="<%= value %>" target="_blank"></a>
+    #     """)
+    
+    # columns = [TableColumn(field=col_name, title=col_name, formatter=wrap_fmt) for col_name in data_filtered.columns]
+    # columns.pop()
+    
+    # source.selected.js_on_change(
+    #     "indices",
+    #     CustomJS(
+    #             args=dict(source=source),
+    #             code="""
+    #             document.dispatchEvent(
+    #                 new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
+    #             )
+    #             """
+    #     )
     # )
-    # return grid_table
-    source = ColumnDataSource(data_filtered)
-    columns = [TableColumn(field=col_name, title=col_name) for col_name in data_filtered.columns]
-    source.selected.js_on_change(
-        "indices",
-        CustomJS(
-                args=dict(source=source),
-                code="""
-                document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
-                )
-                """
-        )
-    )
-    p = DataTable(
-        source=source, 
-        columns=columns, 
-        width=800,
-        height=400,
-        selectable="checkbox"
-    )
-    result = streamlit_bokeh_events(
-        bokeh_plot=p,
-        events="INDEX_SELECT",
-        key="foo",
-        refresh_on_update=False,
-        debounce_time=0
-    )
-    if result :
-        row_selected = result.get("INDEX_SELECT")
-        print(row_selected)
-        st.write(row_selected)
-    #st.bokeh_chart(result)
-    st.dataframe(data_filtered)
-    return None
+    
+    # viewport_height = max(400, len(data_filtered)//10)
+    
+    # bokeh_table = DataTable(
+    #     source=source, 
+    #     columns=columns,
+    #     height=viewport_height,
+    #     selectable="checkbox",
+    #     index_position=None,
+    #     sizing_mode="stretch_both",
+    #     row_height=45
+    # )
+    
+    # result = streamlit_bokeh_events(
+    #     bokeh_plot=bokeh_table,
+    #     events="INDEX_SELECT",
+    #     key="bokeh_table",
+    #     refresh_on_update=st.session_state["changed"],
+    #     debounce_time=0,
+    #     override_height=viewport_height+5,
+    # )
+    
+    # if result :
+    #     row_selected = result.get("INDEX_SELECT")
+    #     return row_selected
 
 
 def user_interaction() -> None:
@@ -210,22 +231,22 @@ def user_interaction() -> None:
     """
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
-    select_data = "gro"
-    data = wm.load_data()[select_data]
-    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
-    results = search_processing(data=data, search=search, is_show=is_show)
-    if not results.empty:
-        with col_filter:
-            add_filter = st.checkbox("Add filter")
-        data_filtered = wm.filter_dataframe(results, add_filter)
-        grid_table = display_AgGrid(data_filtered)
-        if grid_table:
-            sel_row = grid_table["selected_rows"]
+    with Profiler():
+        select_data = "gro"
+        data = wm.load_data()[select_data]
+        search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
+        results = search_processing(data=data, search=search, is_show=is_show)
+        if not results.empty:
+            with col_filter:
+                add_filter = st.checkbox("Add filter")
+            data_filtered = wm.filter_dataframe(results, add_filter)
+            sel_row = display_AgGrid(data_filtered)
             with col_download:
-                wm.display_export_button(sel_row)
-            wm.display_details(sel_row)
-    elif search != "":
-        st.write("No result found.")
+                wm.display_export_button(sel_row, data_filtered)
+            wm.display_details(sel_row, data_filtered)
+        elif search != "":
+            st.write("No result found.")
+
 
 
 if __name__ == "__main__":
