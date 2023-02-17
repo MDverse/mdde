@@ -153,9 +153,17 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
     else : 
         st.session_state["changed"] = False
     
-    wrap_fmt = HTMLTemplateFormatter(template="""<span style='word-break: break-all;'> <%=value %></span>""")
+    template = """
+        <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
+        <span style='word-break: break-all;'></span>
+    """
     
-    columns = [TableColumn(field=col_name, title=col_name, formatter=wrap_fmt) for col_name in data_filtered.columns]
+    #wrap_fmt = HTMLTemplateFormatter(template="""<span style='word-break: break-all;'> <%=value %></span>""")
+    wrap_fmt = HTMLTemplateFormatter(template=template)
+    
+    columns = []
+    for col_name in data_filtered.columns:
+        columns.append(TableColumn(field=col_name, title=col_name, formatter=wrap_fmt))
     columns.pop()
     
     source.selected.js_on_change(
