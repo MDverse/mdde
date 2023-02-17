@@ -225,18 +225,12 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        #grid_table = display_AgGrid(data_filtered)
         bokeh_table = display_bokeh(data_filtered)
-        # if grid_table:
-        #     sel_row = grid_table["selected_rows"]
-        #     with col_download:
-        #         wm.display_export_button(sel_row)
-        #     wm.display_details(sel_row)
         if bokeh_table:
             sel_row = bokeh_table.get("INDEX_SELECT")
             with col_download:
                 wm.display_export_button(sel_row, data_filtered)
-            wm.display_details(sel_row, data_filtered)
+            wm.display_details(sel_row, data_filtered, select_data)
     elif search != "":
         st.write("No result found.")
 

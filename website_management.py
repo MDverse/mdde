@@ -355,15 +355,20 @@ def display_export_button(sel_row: list, data_filtered) -> None:
         )
 
 
-def update_contents(sel_row: list, data_filtered) -> None:
+def update_contents(sel_row: list, data_filtered: pd.DataFrame, select_data: str) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
     ----------
     sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
+    data_filtered: pd.DataFrame
+        filtered dataframe.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    selected_row = sel_row[st.session_state["cursor"]]
+    selected_row = sel_row[st.session_state["cursor" + select_data]]
     data = data_filtered.iloc[selected_row]
     contents = f"""
         **{data["Dataset"]}**:
@@ -376,49 +381,57 @@ def update_contents(sel_row: list, data_filtered) -> None:
     st.session_state["contents"] = contents
 
 
-def update_cursor(is_previous: bool) -> None:
+def update_cursor(is_previous: bool, select_data: str) -> None:
     """Change the value of the cursor by incrementing or decrementing.
 
     Parameters
     ----------
     is_previous: bool
         determine if it should increment the cursor or decrement.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
     if is_previous:
-        st.session_state["cursor"] -= 1
+        st.session_state["cursor" + select_data] -= 1
     else:
-        st.session_state["cursor"] += 1
+        st.session_state["cursor" + select_data] += 1
 
 
-def fix_cursor(size_selected: int) -> None:
+def fix_cursor(size_selected: int, select_data: str) -> None:
     """Correct the cursor position according to the number of selected rows.
 
     Parameters
     ----------
     size_selected: int
         total number of selected rows.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    while st.session_state["cursor"] >= size_selected:
-        st.session_state["cursor"] -= 1
+    while st.session_state["cursor" + select_data] >= size_selected:
+        st.session_state["cursor" + select_data] -= 1
 
 
-def display_details(sel_row: list, data_filtered) -> None:
+def display_details(sel_row: list, data_filtered, select_data: str) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
     ----------
     sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    if "cursor" not in st.session_state:
-        st.session_state["cursor"] = 0
+    if "cursor" + select_data not in st.session_state:
+        st.session_state["cursor" + select_data] = 0
 
     size_selected = len(sel_row)
-    print(len(sel_row))
     if size_selected != 0:
-        fix_cursor(size_selected)
-        update_contents(sel_row, data_filtered)
-        cursor = st.session_state["cursor"]
+        fix_cursor(size_selected, select_data)
+        update_contents(sel_row, data_filtered, select_data)
+        cursor = st.session_state["cursor" + select_data]
 
         col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
         disabled_previous, disabled_next = False, False
@@ -429,7 +442,7 @@ def display_details(sel_row: list, data_filtered) -> None:
             st.button(
                 "⬅",
                 on_click=update_cursor,
-                args=(True,),
+                args=(True, select_data,),
                 key="previous",
                 disabled=disabled_previous,
                 use_container_width=True,
@@ -439,14 +452,14 @@ def display_details(sel_row: list, data_filtered) -> None:
             st.button(
                 "➡",
                 on_click=update_cursor,
-                args=(False,),
+                args=(False, select_data,),
                 key="next",
                 disabled=disabled_next,
                 use_container_width=True,
             )
         st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
     else:
-        st.session_state["cursor"] = 0
+        st.session_state["cursor" + select_data] = 0
 
 
 def load_css() -> None:
