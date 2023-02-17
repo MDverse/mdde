@@ -9,8 +9,11 @@ import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid
 import website_management as wm
-from dash import Dash, dash_table, dcc, html
-from dash.dependencies import Input, Output
+import plotly.graph_objects as go
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, CustomJS
+from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
+from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
@@ -38,13 +41,19 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "date_creation",
         "author",
         "description",
-        "file_number",
+        "file_name",
+        "atom_number",
+        "has_protein",
+        "has_lipid",
+        "has_nucleic",
+        "has_glucid",
+        "has_water_ion",
         "dataset_url",
     ]
     if not is_show:
         results = data[
             data["title"].str.contains(search, case=False)
-            | data["keywords"].str.contains(search, case=False)
+            | data["file_name"].str.contains(search, case=False)
             | data["description"].str.contains(search, case=False)
         ]
     else:
@@ -57,14 +66,20 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Creation date",
         "Authors",
         "Description",
-        "# Files",
+        "File name",
+        "Atom number",
+        "Protein",
+        "Lipid",
+        "Nucleic",
+        "Glucid",
+        "Water/Ion",
         "URL",
     ]
     return results
 
 
-def config_options_keywords(data_filtered: pd.DataFrame, page_size: int) -> list:
-    """Configure the Aggrid object with specific options for keyword searches.
+def config_options_gro(data_filtered: pd.DataFrame, page_size: int) -> list:
+    """Configure an Aggrid object with specific options for gro files searches.
 
     Parameters
     ----------
@@ -82,11 +97,16 @@ def config_options_keywords(data_filtered: pd.DataFrame, page_size: int) -> list
     gridOptions = wm.config_options(data_filtered, page_size)
     # Configuration of specific column widths
     col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
-    gridOptions["columnDefs"][col_names.index("# Files")]["maxWidth"] = 100
-    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 100
-    gridOptions["columnDefs"][col_names.index("Creation date")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Authors")]["maxWidth"] = 140
+    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 165
+    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 120
+    gridOptions["columnDefs"][col_names.index("Atom number")]["maxWidth"] = 180
+    gridOptions["columnDefs"][col_names.index("Protein")]["maxWidth"] = 145
+    gridOptions["columnDefs"][col_names.index("Lipid")]["maxWidth"] = 120
+    gridOptions["columnDefs"][col_names.index("Nucleic")]["maxWidth"] = 140
+    gridOptions["columnDefs"][col_names.index("Glucid")]["maxWidth"] = 125
+    gridOptions["columnDefs"][col_names.index("Water/Ion")]["maxWidth"] = 150
+    gridOptions["columnDefs"][col_names.index("Creation date")]["hide"] = "true"
+    gridOptions["columnDefs"][col_names.index("Authors")]["hide"] = "true"
     return gridOptions
 
 
@@ -115,42 +135,69 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
-def display_AgGrid(results: pd.DataFrame, columns: list, select_data: int) -> object:
+def display_AgGrid(data_filtered: pd.DataFrame) -> object:
     """Configure, create and display the AgGrid object.
 
     Parameters
     ----------
-    results: pd.DataFrame
+    data_filtered: pd.DataFrame
         a pandas dataframe filtred.
-    select_data: int
-        contains a number (0, 1 or 2) that will allow the selection of data.
-    columns: list
-        a list for the layout of the site.
 
     Returns
     -------
     object
-        returns a AgGrid object contains our data filtered.
+        returns a AgGrid object contains our data filtered and some options.
     """
-    with columns[0]:
-        page_size = st.selectbox(
-            "Select rows", (10, 20, 30, 50, 100, 200, 250), index=1
-        )
-    st.write(len(results), "elements found")
+    page_size = 20
+    st.write(len(data_filtered), "elements found")
     # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_keywords(results, page_size)
+    gridOptions = config_options_gro(data_filtered, page_size)
     # Generate our Aggrid table and display it
-    grid_table = AgGrid(
-        results,
-        gridOptions=gridOptions,
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
-        theme="alpine",
+    # grid_table = AgGrid(
+    #     data_filtered,
+    #     gridOptions=gridOptions,
+    #     allow_unsafe_jscode=True,
+    #     fit_columns_on_grid_load=True,
+    #     theme="alpine",
+    # )
+    # return grid_table
+    source = ColumnDataSource(data_filtered)
+    columns = [TableColumn(field=col_name, title=col_name) for col_name in data_filtered.columns]
+    source.selected.js_on_change(
+        "indices",
+        CustomJS(
+                args=dict(source=source),
+                code="""
+                document.dispatchEvent(
+                    new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
+                )
+                """
+        )
     )
-    return grid_table
+    p = DataTable(
+        source=source, 
+        columns=columns, 
+        width=800,
+        height=400,
+        selectable="checkbox"
+    )
+    result = streamlit_bokeh_events(
+        bokeh_plot=p,
+        events="INDEX_SELECT",
+        key="foo",
+        refresh_on_update=False,
+        debounce_time=0
+    )
+    if result :
+        row_selected = result.get("INDEX_SELECT")
+        print(row_selected)
+        st.write(row_selected)
+    #st.bokeh_chart(result)
+    st.dataframe(data_filtered)
+    return None
 
 
-def user_interaction(select_data: int) -> None:
+def user_interaction() -> None:
     """Control the streamlit application.
 
     Allows interaction between the user and our informational data from MD
@@ -163,16 +210,18 @@ def user_interaction(select_data: int) -> None:
     """
     st.set_page_config(page_title="MDverse", layout="wide")
     wm.load_css()
+    select_data = "gro"
     data = wm.load_data()[select_data]
-    search, is_show, columns = wm.display_search_bar(select_data)
+    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
-        grid_table = display_AgGrid(
-            results=results, columns=columns, select_data=select_data
-        )
+        with col_filter:
+            add_filter = st.checkbox("Add filter")
+        data_filtered = wm.filter_dataframe(results, add_filter)
+        grid_table = display_AgGrid(data_filtered)
         if grid_table:
             sel_row = grid_table["selected_rows"]
-            with columns[9]:
+            with col_download:
                 wm.display_export_button(sel_row)
             wm.display_details(sel_row)
     elif search != "":
@@ -180,4 +229,4 @@ def user_interaction(select_data: int) -> None:
 
 
 if __name__ == "__main__":
-    user_interaction(0)
+    user_interaction()
