@@ -393,12 +393,12 @@ def update_contents(sel_row: list, data_filtered: pd.DataFrame, select_data: str
     selected_row = sel_row[st.session_state["cursor" + select_data]]
     data = data_filtered.iloc[selected_row]
     contents = f"""
-        **{data["Dataset"]}**:
-        [{data["ID"]}]({data["URL"]})\n
-        {data["Creation date"]}\n
-        ### **{data["Title"]}**\n
-        ##### {data["Authors"]}\n
-        {data["Description"]}
+        **Dataset:**
+        [{data["Dataset"]} {data["ID"]}]({data["URL"]})<br />
+        **Creation date:** {data["Creation date"]}<br />
+        **Author(s):** {data["Authors"]}<br />
+        **Title:** *{data["Title"]}*<br />
+        **Description:**<br /> {data["Description"]}
     """
     st.session_state["contents"] = contents
 
