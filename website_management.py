@@ -130,6 +130,7 @@ def is_isoformat(dates: object) -> bool:
 
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     """Add a UI on top of a dataframe to let user filter columns.
+    
     This function is based on the code from the following repository:
     https://github.com/tylerjrichards/st-filter-dataframe
 
@@ -159,11 +160,13 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(
-        label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
     with modification_container:
         to_filter_columns = st.multiselect(
-            label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
+            label="Filter dataframe on",
+            options=df.columns[:-1],
+            label_visibility="collapsed",
+        )
         for column in to_filter_columns:
             left, right, _ = st.columns((1, 20, 5))
             left.write("↳")
@@ -196,8 +199,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(
-                        map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -206,8 +208,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(
-                            user_text_input, case=False, na=False)
+                        df[column].str.contains(user_text_input, case=False, na=False)
                     ]
     return df
 
@@ -245,37 +246,52 @@ def link_cell_func() -> str:
             """
 
 
-def display_bokeh(data_filtered: pd.DataFrame) -> list:
+def display_bokeh(data_filtered: pd.DataFrame) -> dict:
+    """Configure, create and display the interactive bokeh datatable.
+
+    Parameters
+    ----------
+    data_filtered: pd.DataFrame
+        a pandas dataframe filtered.
+
+    Returns
+    -------
+    object
+        returns an event dict contains our data filtered and some options.
+    """
+    # Store a variable to define whether the table has been modified.
     if "data" not in st.session_state and "changed" not in st.session_state:
         st.session_state["changed"] = False
         st.session_state["data"] = data_filtered
-
     st.write(len(data_filtered), "elements found")
+    # Create a ColumnDataSource from the dataset.
     source = ColumnDataSource(data_filtered)
-
-    if (not data_filtered.equals(st.session_state["data"])):
+    # Check if data has been changed
+    if not data_filtered.equals(st.session_state["data"]):
         st.session_state["changed"] = True
         st.session_state["data"] = data_filtered
     else:
         st.session_state["changed"] = False
-
+    # Create two templates that will apply a hyperlink and a tooltip
     template_content = content_cell_func()
-
     template_href = link_cell_func()
-
+    # Create a HTMLTemplateFormatter according to the templates.
     content_fmt = HTMLTemplateFormatter(template=template_content)
     href_fmt = HTMLTemplateFormatter(template=template_href)
-
+    # Create a TableColumn from the dataset.
     columns = []
     for col_name in data_filtered.columns:
         if col_name == "ID":
-            columns.append(TableColumn(
-                field=col_name, title=col_name, formatter=href_fmt))
+            columns.append(
+                TableColumn(field=col_name, title=col_name, formatter=href_fmt)
+            )
         else:
-            columns.append(TableColumn(
-                field=col_name, title=col_name, formatter=content_fmt))
+            columns.append(
+                TableColumn(field=col_name, title=col_name, formatter=content_fmt)
+            )
+    # Remove the last column which is the URL column.
     columns.pop()
-
+    # Create a JavaScript code to get the selected rows.
     source.selected.js_on_change(
         "indices",
         CustomJS(
@@ -284,12 +300,12 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
                 document.dispatchEvent(
                     new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
                 )
-                """
-        )
+                """,
+        ),
     )
-
-    viewport_height = max(550, len(data_filtered)//10)
-
+    # The size of the data table.
+    viewport_height = max(550, len(data_filtered) // 10)
+    # Create a DataTable from our different objects.
     datatable = DataTable(
         source=source,
         columns=columns,
@@ -299,16 +315,15 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
         sizing_mode="stretch_both",
         row_height=25,
     )
-
+    # Create an event to interact with our bokeh object via streamlit.
     bokeh_table = streamlit_bokeh_events(
         bokeh_plot=datatable,
         events="INDEX_SELECT",
         key="bokeh_table",
         refresh_on_update=st.session_state["changed"],
         debounce_time=0,
-        override_height=viewport_height+5,
+        override_height=viewport_height + 5,
     )
-
     return bokeh_table
 
 
@@ -384,7 +399,9 @@ def display_export_button(sel_row: list, data_filtered) -> None:
         )
 
 
-def update_contents(sel_row: list, data_filtered: pd.DataFrame, select_data: str) -> None:
+def update_contents(
+    sel_row: list, data_filtered: pd.DataFrame, select_data: str
+) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
@@ -449,8 +466,10 @@ def fix_cursor(size_selected: int, select_data: str) -> None:
         st.session_state["cursor" + select_data] -= 1
 
 
-def display_buttons_details(columns: list, select_data: str, size_selected: int) -> None:
-    """Displays the buttons in a structured way.
+def display_buttons_details(
+    columns: list, select_data: str, size_selected: int
+) -> None:
+    """Display the buttons in a structured way.
 
     Parameters
     ----------
@@ -470,7 +489,11 @@ def display_buttons_details(columns: list, select_data: str, size_selected: int)
         st.button(
             "«",
             on_click=update_cursor,
-            args=("backward", select_data, size_selected,),
+            args=(
+                "backward",
+                select_data,
+                size_selected,
+            ),
             key="backward",
             disabled=disabled_previous,
             use_container_width=True,
@@ -479,7 +502,11 @@ def display_buttons_details(columns: list, select_data: str, size_selected: int)
             st.button(
                 "⬅",
                 on_click=update_cursor,
-                args=("previous", select_data, size_selected,),
+                args=(
+                    "previous",
+                    select_data,
+                    size_selected,
+                ),
                 key="previous",
                 disabled=disabled_previous,
                 use_container_width=True,
@@ -488,7 +515,11 @@ def display_buttons_details(columns: list, select_data: str, size_selected: int)
             st.button(
                 "➡",
                 on_click=update_cursor,
-                args=("next", select_data, size_selected,),
+                args=(
+                    "next",
+                    select_data,
+                    size_selected,
+                ),
                 key="next",
                 disabled=disabled_next,
                 use_container_width=True,
@@ -497,20 +528,28 @@ def display_buttons_details(columns: list, select_data: str, size_selected: int)
             st.button(
                 "»",
                 on_click=update_cursor,
-                args=("forward", select_data, size_selected,),
+                args=(
+                    "forward",
+                    select_data,
+                    size_selected,
+                ),
                 key="forward",
                 disabled=disabled_next,
                 use_container_width=True,
             )
 
 
-def display_details(sel_row: list, data_filtered, select_data: str) -> None:
+def display_details(
+    sel_row: list, data_filtered: pd.DataFrame, select_data: str
+) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
     ----------
     sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
+    data_filtered: pd.DataFrame
+        filtered dataframe.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
@@ -527,8 +566,7 @@ def display_details(sel_row: list, data_filtered, select_data: str) -> None:
         with columns[0]:
             st.write(cursor + 1, "/", size_selected, "selected")
         display_buttons_details(columns, select_data, size_selected)
-        st.sidebar.markdown(
-            st.session_state["contents"], unsafe_allow_html=True)
+        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0
 
