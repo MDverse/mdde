@@ -411,7 +411,7 @@ def update_contents(sel_row: list, data_filtered: pd.DataFrame, select_data: str
 
 
 def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
-    """Change the value of the cursor by incrementing or decrementing.
+    """Change the value of the slider by applying a specific value to it.
 
     Parameters
     ----------
@@ -450,7 +450,7 @@ def fix_cursor(size_selected: int, select_data: str) -> None:
 
 
 def display_buttons_details(columns: list, select_data: str, size_selected: int) -> None:
-    """Displays the buttons in a structured way
+    """Displays the buttons in a structured way.
 
     Parameters
     ----------
