@@ -403,21 +403,26 @@ def update_contents(sel_row: list, data_filtered: pd.DataFrame, select_data: str
     st.session_state["contents"] = contents
 
 
-def update_cursor(is_previous: bool, select_data: str) -> None:
+def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
     """Change the value of the cursor by incrementing or decrementing.
 
     Parameters
     ----------
-    is_previous: bool
-        determine if it should increment the cursor or decrement.
+    select_cursor: str
+        Type of increment or decrement for the cursor.
+        Values: ["backward", "previous", "next", "forward"]
     select_data: str
         Type of data to search for.
-        Values: ["datasets", "gro","mdp"]
+        Values: ["datasets", "gro", "mdp"]
     """
-    if is_previous:
+    if select_cursor == "backward":
+        st.session_state["cursor" + select_data] = 0
+    elif select_cursor == "previous" :
         st.session_state["cursor" + select_data] -= 1
-    else:
+    elif select_cursor == "next":
         st.session_state["cursor" + select_data] += 1
+    else :
+        st.session_state["cursor" + select_data] = size_selected - 1
 
 
 def fix_cursor(size_selected: int, select_data: str) -> None:
@@ -454,28 +459,45 @@ def display_details(sel_row: list, data_filtered, select_data: str) -> None:
         fix_cursor(size_selected, select_data)
         update_contents(sel_row, data_filtered, select_data)
         cursor = st.session_state["cursor" + select_data]
-
-        col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
+        col_select, _, col_backward, col_previous, col_next, col_forward = st.sidebar.columns([4, 1, 2, 2, 2, 2])
         disabled_previous, disabled_next = False, False
         with col_select:
             st.write(cursor + 1, "/", size_selected, "selected")
+        disabled_previous = False if cursor - 1 >= 0 else True
+        disabled_next = False if cursor + 1 < size_selected else True
+        with col_backward:
+            st.button(
+                "«",
+                on_click=update_cursor,
+                args=("backward", select_data, size_selected,),
+                key="backward",
+                disabled=disabled_previous,
+                use_container_width=True,
+            )
         with col_previous:
-            disabled_previous = False if cursor - 1 >= 0 else True
             st.button(
                 "⬅",
                 on_click=update_cursor,
-                args=(True, select_data,),
+                args=("previous", select_data, size_selected,),
                 key="previous",
                 disabled=disabled_previous,
                 use_container_width=True,
             )
         with col_next:
-            disabled_next = False if cursor + 1 < size_selected else True
             st.button(
                 "➡",
                 on_click=update_cursor,
-                args=(False, select_data,),
+                args=("next", select_data, size_selected,),
                 key="next",
+                disabled=disabled_next,
+                use_container_width=True,
+            )
+        with col_forward:
+            st.button(
+                "»",
+                on_click=update_cursor,
+                args=("forward", select_data, size_selected,),
+                key="forward",
                 disabled=disabled_next,
                 use_container_width=True,
             )
