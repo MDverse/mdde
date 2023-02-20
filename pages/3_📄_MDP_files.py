@@ -4,9 +4,6 @@ import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridUpdateMode
 import website_management as wm
-from bokeh.models import ColumnDataSource, CustomJS
-from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
-from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
@@ -225,7 +222,7 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        bokeh_table = display_bokeh(data_filtered)
+        bokeh_table = wm.display_bokeh(data_filtered)
         if bokeh_table:
             sel_row = bokeh_table.get("INDEX_SELECT")
             with col_download:
