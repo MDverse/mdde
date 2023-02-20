@@ -159,9 +159,11 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(
+        label="Filter dataframe on:", expanded=True)
     with modification_container:
-        to_filter_columns = st.multiselect(label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
+        to_filter_columns = st.multiselect(
+            label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
         for column in to_filter_columns:
             left, right, _ = st.columns((1, 20, 5))
             left.write("↳")
@@ -194,7 +196,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(
+                        map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -203,7 +206,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(user_text_input, case=False, na=False)
+                        df[column].str.contains(
+                            user_text_input, case=False, na=False)
                     ]
     return df
 
@@ -245,47 +249,49 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
     if "data" not in st.session_state and "changed" not in st.session_state:
         st.session_state["changed"] = False
         st.session_state["data"] = data_filtered
-        
+
     st.write(len(data_filtered), "elements found")
     source = ColumnDataSource(data_filtered)
-    
-    if (not data_filtered.equals(st.session_state["data"])) :
+
+    if (not data_filtered.equals(st.session_state["data"])):
         st.session_state["changed"] = True
         st.session_state["data"] = data_filtered
-    else : 
+    else:
         st.session_state["changed"] = False
-    
+
     template_content = content_cell_func()
-    
+
     template_href = link_cell_func()
-    
+
     content_fmt = HTMLTemplateFormatter(template=template_content)
     href_fmt = HTMLTemplateFormatter(template=template_href)
-    
+
     columns = []
     for col_name in data_filtered.columns:
         if col_name == "ID":
-            columns.append(TableColumn(field=col_name, title=col_name, formatter=href_fmt))
-        else :
-            columns.append(TableColumn(field=col_name, title=col_name, formatter=content_fmt))
+            columns.append(TableColumn(
+                field=col_name, title=col_name, formatter=href_fmt))
+        else:
+            columns.append(TableColumn(
+                field=col_name, title=col_name, formatter=content_fmt))
     columns.pop()
-    
+
     source.selected.js_on_change(
         "indices",
         CustomJS(
-                args=dict(source=source),
-                code="""
+            args=dict(source=source),
+            code="""
                 document.dispatchEvent(
                     new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
                 )
                 """
         )
     )
-    
+
     viewport_height = max(550, len(data_filtered)//10)
-    
+
     datatable = DataTable(
-        source=source, 
+        source=source,
         columns=columns,
         height=viewport_height,
         selectable="checkbox",
@@ -302,8 +308,9 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
         debounce_time=0,
         override_height=viewport_height+5,
     )
-    
+
     return bokeh_table
+
 
 def convert_data(sel_row: list) -> pd.DataFrame:
     """Convert a list of dictionary into a pd.DataFrame object.
@@ -414,14 +421,16 @@ def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> N
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro", "mdp"]
+    size_selected: int
+        total number of selected rows.
     """
     if select_cursor == "backward":
         st.session_state["cursor" + select_data] = 0
-    elif select_cursor == "previous" :
+    elif select_cursor == "previous":
         st.session_state["cursor" + select_data] -= 1
     elif select_cursor == "next":
         st.session_state["cursor" + select_data] += 1
-    else :
+    else:
         st.session_state["cursor" + select_data] = size_selected - 1
 
 
@@ -438,6 +447,61 @@ def fix_cursor(size_selected: int, select_data: str) -> None:
     """
     while st.session_state["cursor" + select_data] >= size_selected:
         st.session_state["cursor" + select_data] -= 1
+
+
+def display_buttons_details(columns: list, select_data: str, size_selected: int) -> None:
+    """Displays the buttons in a structured way
+
+    Parameters
+    ----------
+    columns: list
+        List used for the layout of the sidebar.
+        Values: ["backward", "previous", "next", "forward"]
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro", "mdp"]
+    size_selected: int
+        total number of selected rows.
+    """
+    cursor = st.session_state["cursor" + select_data]
+    disabled_previous = False if cursor - 1 >= 0 else True
+    disabled_next = False if cursor + 1 < size_selected else True
+    with columns[2]:
+        st.button(
+            "«",
+            on_click=update_cursor,
+            args=("backward", select_data, size_selected,),
+            key="backward",
+            disabled=disabled_previous,
+            use_container_width=True,
+        )
+        with columns[3]:
+            st.button(
+                "⬅",
+                on_click=update_cursor,
+                args=("previous", select_data, size_selected,),
+                key="previous",
+                disabled=disabled_previous,
+                use_container_width=True,
+            )
+        with columns[4]:
+            st.button(
+                "➡",
+                on_click=update_cursor,
+                args=("next", select_data, size_selected,),
+                key="next",
+                disabled=disabled_next,
+                use_container_width=True,
+            )
+        with columns[5]:
+            st.button(
+                "»",
+                on_click=update_cursor,
+                args=("forward", select_data, size_selected,),
+                key="forward",
+                disabled=disabled_next,
+                use_container_width=True,
+            )
 
 
 def display_details(sel_row: list, data_filtered, select_data: str) -> None:
@@ -459,49 +523,12 @@ def display_details(sel_row: list, data_filtered, select_data: str) -> None:
         fix_cursor(size_selected, select_data)
         update_contents(sel_row, data_filtered, select_data)
         cursor = st.session_state["cursor" + select_data]
-        col_select, _, col_backward, col_previous, col_next, col_forward = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-        disabled_previous, disabled_next = False, False
-        with col_select:
+        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
+        with columns[0]:
             st.write(cursor + 1, "/", size_selected, "selected")
-        disabled_previous = False if cursor - 1 >= 0 else True
-        disabled_next = False if cursor + 1 < size_selected else True
-        with col_backward:
-            st.button(
-                "«",
-                on_click=update_cursor,
-                args=("backward", select_data, size_selected,),
-                key="backward",
-                disabled=disabled_previous,
-                use_container_width=True,
-            )
-        with col_previous:
-            st.button(
-                "⬅",
-                on_click=update_cursor,
-                args=("previous", select_data, size_selected,),
-                key="previous",
-                disabled=disabled_previous,
-                use_container_width=True,
-            )
-        with col_next:
-            st.button(
-                "➡",
-                on_click=update_cursor,
-                args=("next", select_data, size_selected,),
-                key="next",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
-        with col_forward:
-            st.button(
-                "»",
-                on_click=update_cursor,
-                args=("forward", select_data, size_selected,),
-                key="forward",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
-        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+        display_buttons_details(columns, select_data, size_selected)
+        st.sidebar.markdown(
+            st.session_state["contents"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0
 
