@@ -8,7 +8,6 @@ from pandas.api.types import (
     is_object_dtype,
 )
 from st_keyup import st_keyup
-from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
 from bokeh.models import ColumnDataSource, CustomJS
 from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
@@ -212,7 +211,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
 def content_cell_func() -> str:
     """Return a Java script function as a string to display a tooltip.
 
-    The Java script code will be configured in the config_options function.
+    The Java script code will be configured in the display_bokeh function.
 
     Returns
     -------
@@ -220,78 +219,34 @@ def content_cell_func() -> str:
         return the JS code as a string.
     """
     return """
-            function(params) {
-                return '<span title="' + params.value + '">'+params.value+'</span>';
-            };
+            <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
+            <span style='word-break: break-all;'></span>
             """
 
 
-def link_cell_func(col_name: str) -> str:
+def link_cell_func() -> str:
     """Return a Java script function as a string to create a hyperlink.
 
-    The Java script code will be configured in the config_options function.
-
-    Parameters
-    ----------
-    col_name: str
-        name of column contains a hyperlink.
+    The Java script code will be configured in the display_bokeh function.
 
     Returns
     -------
     str
         return the JS code as a string.
     """
-    contents = f"params.node.data.{col_name}"
-    return f"""
-            function(params) {{
-                return '<a href="' + {contents} + '" target="_blank">'+ params.value+'</a>';
-            }};
+    return """
+            <a href="<%= URL %>" target="_blank" data-toggle="tooltip" title="<%= URL %>">
+                <%= value %>
+            </a>
             """
 
 
-def config_options(results: pd.DataFrame, page_size: int) -> list:
-    """Configure the Aggrid object with dedicated functions for our data.
-
-    Parameters
-    ----------
-    results: pd.DataFrame
-        contains our data filtered by a search.
-    page_size: int
-        number of rows to display
-
-    Returns
-    -------
-    list
-        return a list of dictionary containing all the information of the
-        configuration for our Aggrid object.
-    """
-    # Convert our dataframe into a GridOptionBuilder object
-    gb = GridOptionsBuilder.from_dataframe(results)
-    # Add a checkbox for each row
-    gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-    gb.configure_pagination(
-        enabled=True, paginationAutoPageSize=False, paginationPageSize=page_size
-    )
-    # Add a checkbox in the first column to select all columns
-    gb.configure_column("Dataset", headerCheckboxSelection=True)
-    # Remove filters included in Aggrid
-    gb.configure_default_column(filterable=False, sortable=False, suppressMenu=True)
-    # Add a JsCode that will display the content when hovering with the mouse
-    gb.configure_columns(results.columns, cellRenderer=JsCode(content_cell_func()))
-    # Add a JsCode that will add a hyperlink to the URL column
-    gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
-    gb.configure_column("URL", hide=True)
-    # Build the dictionary that will contain all the configurations
-    gridOptions = gb.build()
-    return gridOptions
-
-
 def display_bokeh(data_filtered: pd.DataFrame) -> list:
-    st.write(len(data_filtered), "elements found")
-    if "data" not in st.session_state:
+    if "data" not in st.session_state and "changed" not in st.session_state:
         st.session_state["changed"] = False
         st.session_state["data"] = data_filtered
-    
+        
+    st.write(len(data_filtered), "elements found")
     source = ColumnDataSource(data_filtered)
     
     if (not data_filtered.equals(st.session_state["data"])) :
@@ -300,16 +255,9 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
     else : 
         st.session_state["changed"] = False
     
-    template_content = """
-        <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
-        <span style='word-break: break-all;'></span>
-    """
+    template_content = content_cell_func()
     
-    template_href = """
-        <a href="<%= URL %>" target="_blank" data-toggle="tooltip" title="<%= URL %>">
-            <%= value %>
-        </a>
-    """
+    template_href = link_cell_func()
     
     content_fmt = HTMLTemplateFormatter(template=template_content)
     href_fmt = HTMLTemplateFormatter(template=template_href)
@@ -343,9 +291,9 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
         selectable="checkbox",
         index_position=None,
         sizing_mode="stretch_both",
-        row_height=45
+        row_height=25,
     )
-    
+
     bokeh_table = streamlit_bokeh_events(
         bokeh_plot=datatable,
         events="INDEX_SELECT",
@@ -356,7 +304,6 @@ def display_bokeh(data_filtered: pd.DataFrame) -> list:
     )
     
     return bokeh_table
-
 
 def convert_data(sel_row: list) -> pd.DataFrame:
     """Convert a list of dictionary into a pd.DataFrame object.

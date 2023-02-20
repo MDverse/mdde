@@ -2,7 +2,6 @@
 
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid
 import website_management as wm
 
 
@@ -68,38 +67,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     return results
 
 
-def config_options_gro(data_filtered: pd.DataFrame, page_size: int) -> list:
-    """Configure an Aggrid object with specific options for gro files searches.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        contains our data filtered by a search.
-    page_size: int
-        specifies the number of rows to display in the AgGrid table.
-
-    Returns
-    -------
-    list
-        return a list of dictionary containing all the information of the
-        configuration for our Aggrid object.
-    """
-    gridOptions = wm.config_options(data_filtered, page_size)
-    # Configuration of specific column widths
-    col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
-    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 165
-    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 120
-    gridOptions["columnDefs"][col_names.index("Atom number")]["maxWidth"] = 180
-    gridOptions["columnDefs"][col_names.index("Protein")]["maxWidth"] = 145
-    gridOptions["columnDefs"][col_names.index("Lipid")]["maxWidth"] = 120
-    gridOptions["columnDefs"][col_names.index("Nucleic")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Glucid")]["maxWidth"] = 125
-    gridOptions["columnDefs"][col_names.index("Water/Ion")]["maxWidth"] = 150
-    gridOptions["columnDefs"][col_names.index("Creation date")]["hide"] = "true"
-    gridOptions["columnDefs"][col_names.index("Authors")]["hide"] = "true"
-    return gridOptions
-
-
 def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
     """Search the table for the word the user is looking for.
 
@@ -123,89 +90,6 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return results
     else:
         return pd.DataFrame()
-
-
-def display_AgGrid(data_filtered: pd.DataFrame) -> object:
-    """Configure, create and display the AgGrid object.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        a pandas dataframe filtred.
-
-    Returns
-    -------
-    object
-        returns a AgGrid object contains our data filtered and some options.
-    """
-    page_size = 20
-    st.write(len(data_filtered), "elements found")
-    # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_gro(data_filtered, page_size)
-    # Generate our Aggrid table and display it
-    grid_table = AgGrid(
-        data_filtered,
-        gridOptions=gridOptions,
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
-        theme="alpine",
-    )
-    return grid_table
-
-
-def display_bokeh(data_filtered: pd.DataFrame) -> list:
-    st.write(len(data_filtered), "elements found")
-    if "data" not in st.session_state:
-        st.session_state["changed"] = False
-        st.session_state["data"] = data_filtered
-    
-    source = ColumnDataSource(data_filtered)
-    
-    if (not data_filtered.equals(st.session_state["data"])) :
-        st.session_state["changed"] = True
-        st.session_state["data"] = data_filtered
-    else : 
-        st.session_state["changed"] = False
-    
-    wrap_fmt = HTMLTemplateFormatter(template="""<span style='word-break: break-all;'> <%=value %></span>""")
-    
-    columns = [TableColumn(field=col_name, title=col_name, formatter=wrap_fmt) for col_name in data_filtered.columns]
-    columns.pop()
-    
-    source.selected.js_on_change(
-        "indices",
-        CustomJS(
-                args=dict(source=source),
-                code="""
-                document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
-                )
-                """
-        )
-    )
-    
-    viewport_height = max(550, len(data_filtered)//10)
-    
-    datatable = DataTable(
-        source=source, 
-        columns=columns,
-        height=viewport_height,
-        selectable="checkbox",
-        index_position=None,
-        sizing_mode="stretch_both",
-        row_height=45
-    )
-    
-    bokeh_table = streamlit_bokeh_events(
-        bokeh_plot=datatable,
-        events="INDEX_SELECT",
-        key="bokeh_table",
-        refresh_on_update=st.session_state["changed"],
-        debounce_time=0,
-        override_height=viewport_height+5,
-    )
-    
-    return bokeh_table
 
 
 def user_interaction() -> None:

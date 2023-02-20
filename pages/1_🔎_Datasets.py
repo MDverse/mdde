@@ -2,7 +2,6 @@
 
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid
 import website_management as wm
 
 
@@ -56,33 +55,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     return results
 
 
-def config_options_keywords(data_filtered: pd.DataFrame, page_size: int) -> list:
-    """Configure the Aggrid object with specific options for keyword searches.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        contains our data filtered by a search.
-    page_size: int
-        specifies the number of rows to display in the AgGrid table.
-
-    Returns
-    -------
-    list
-        return a list of dictionary containing all the information of the
-        configuration for our Aggrid object.
-    """
-    gridOptions = wm.config_options(data_filtered, page_size)
-    # Configuration of specific column widths
-    col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
-    gridOptions["columnDefs"][col_names.index("# Files")]["maxWidth"] = 100
-    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 100
-    gridOptions["columnDefs"][col_names.index("Creation date")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Authors")]["maxWidth"] = 140
-    return gridOptions
-
-
 def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
     """Search the table for the word the user is looking for.
 
@@ -106,34 +78,6 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return results
     else:
         return pd.DataFrame()
-
-
-def display_AgGrid(data_filtered: pd.DataFrame) -> object:
-    """Configure, create and display the AgGrid object.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        a pandas dataframe filtred.
-
-    Returns
-    -------
-    object
-        returns a AgGrid object contains our data filtered and some options.
-    """
-    page_size = 20
-    st.write(len(data_filtered), "elements found")
-    # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_keywords(data_filtered, page_size)
-    # Generate our Aggrid table and display it
-    grid_table = AgGrid(
-        data_filtered,
-        gridOptions=gridOptions,
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
-        theme="alpine",
-    )
-    return grid_table
 
 
 def user_interaction() -> None:
