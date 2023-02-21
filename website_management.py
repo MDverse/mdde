@@ -389,7 +389,7 @@ def display_export_button(sel_row: list, data_filtered) -> None:
         contains the selected rows of our Aggrid array as a list of dictionary.
     """
     if sel_row:
-        new_data = data_filtered
+        new_data = data_filtered.iloc[sel_row]
         date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         st.download_button(
             label="Export selection to tsv",
