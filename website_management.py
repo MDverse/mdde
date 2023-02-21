@@ -15,65 +15,13 @@ from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
-def load_data() -> tuple:
-    """Retrieve our data and loads it into the pd.DataFrame object.
-
-    Returns
-    -------
-    tuple
-        returns an tuple contains pd.DataFrame object containing our datasets.
-    """
-    repository = ["zenodo", "figshare", "osf"]
-    dfs_merged = []
-    for name_rep in repository:
-        tmp_data_text = pd.read_csv(
-            f"data/{name_rep}_datasets_text.tsv",
-            delimiter="\t",
-            dtype={"dataset_id": str},
-        )
-        tmp_dataset = pd.read_csv(
-            f"data/{name_rep}_datasets.tsv", delimiter="\t", dtype={"dataset_id": str}
-        )
-        tmp_data_merged = pd.merge(
-            tmp_data_text,
-            tmp_dataset,
-            on=["dataset_id", "dataset_origin"],
-            validate="many_to_one",
-        )
-        print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
-        dfs_merged.append(tmp_data_merged)
-    datasets = pd.concat(dfs_merged, ignore_index=True)
-    gro = pd.read_csv(
-        f"data/gromacs_gro_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
-    )
-    gro_data = pd.merge(
-        gro,
-        datasets,
-        how="left",
-        on=["dataset_id", "dataset_origin"],
-        validate="many_to_one",
-    )
-    mdp = pd.read_csv(
-        f"data/gromacs_mdp_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
-    )
-    mdp_data = pd.merge(
-        mdp,
-        datasets,
-        how="left",
-        on=["dataset_id", "dataset_origin"],
-        validate="many_to_one",
-    )
-    return datasets, gro_data, mdp_data
-
-
-@st.cache_data
 def load_data() -> dict:
     """Retrieve our data and loads it into the pd.DataFrame object.
 
     Returns
     -------
     dict
-        returns a dict contains pd.DataFrame object containing our datasets.
+        returns a dict containing the pd.DataFrame objects of our datasets.
     """
     dfs = {}
     datasets = pd.read_parquet(
@@ -130,7 +78,7 @@ def is_isoformat(dates: object) -> bool:
 
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     """Add a UI on top of a dataframe to let user filter columns.
-    
+
     This function is based on the code from the following repository:
     https://github.com/tylerjrichards/st-filter-dataframe
 
@@ -160,7 +108,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(
+        label="Filter dataframe on:", expanded=True)
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
@@ -199,7 +148,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(
+                        map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -208,15 +158,17 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(user_text_input, case=False, na=False)
+                        df[column].str.contains(
+                            user_text_input, case=False, na=False)
                     ]
     return df
 
 
 def content_cell_func() -> str:
-    """Return a Java script function as a string to display a tooltip.
+    """Return a JavaScript template as a string to display a tooltip.
 
-    The Java script code will be configured in the display_bokeh function.
+    The template will be configured in the display_bokeh function.
+    The model used is the Underscore model : http://underscorejs.org/#template
 
     Returns
     -------
@@ -230,9 +182,10 @@ def content_cell_func() -> str:
 
 
 def link_cell_func() -> str:
-    """Return a Java script function as a string to create a hyperlink.
+    """Return a JavaScript template as a string to create a hyperlink.
 
-    The Java script code will be configured in the display_bokeh function.
+    The template will be configured in the display_bokeh function.
+    The model used is the Underscore model : http://underscorejs.org/#template
 
     Returns
     -------
@@ -287,7 +240,8 @@ def display_bokeh(data_filtered: pd.DataFrame) -> dict:
             )
         else:
             columns.append(
-                TableColumn(field=col_name, title=col_name, formatter=content_fmt)
+                TableColumn(field=col_name, title=col_name,
+                            formatter=content_fmt)
             )
     # Remove the last column which is the URL column.
     columns.pop()
@@ -325,26 +279,6 @@ def display_bokeh(data_filtered: pd.DataFrame) -> dict:
         override_height=viewport_height + 5,
     )
     return bokeh_table
-
-
-def convert_data(sel_row: list) -> pd.DataFrame:
-    """Convert a list of dictionary into a pd.DataFrame object.
-
-    Parameters
-    ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
-
-    Returns
-    -------
-    pd.DataFrame
-        returns an pd.DataFrame object containing the selected rows of our
-        data.
-    """
-    to_export: pd.DataFrame = pd.DataFrame.from_records(sel_row)
-    if "_selectedRowNodeInfo" in to_export.columns:
-        to_export.pop("_selectedRowNodeInfo")
-    return to_export
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
@@ -566,7 +500,8 @@ def display_details(
         with columns[0]:
             st.write(cursor + 1, "/", size_selected, "selected")
         display_buttons_details(columns, select_data, size_selected)
-        st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+        st.sidebar.markdown(
+            st.session_state["contents"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0
 
