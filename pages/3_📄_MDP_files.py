@@ -23,6 +23,9 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     pd.DataFrame
         returns the filtered pd.DataFrame object.
     """
+    replace_list = ["(", ")"]
+    for replace in replace_list:
+        search = search.replace(replace, "\\" + replace)
     to_keep = [
         "dataset_origin",
         "dataset_id",
@@ -100,7 +103,8 @@ def user_interaction() -> None:
     wm.load_css()
     select_data = "mdp"
     data = wm.load_data()[select_data]
-    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
+    search, is_show, col_filter, col_download = wm.display_search_bar(
+        select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         with col_filter:

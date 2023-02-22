@@ -23,6 +23,9 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     pd.DataFrame
         returns the filtered pd.DataFrame object.
     """
+    replace_list = ["(", ")"]
+    for replace in replace_list:
+        search = search.replace(replace, "\\" + replace)
     to_keep = [
         "dataset_origin",
         "dataset_id",
