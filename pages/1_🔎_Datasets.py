@@ -23,9 +23,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     pd.DataFrame
         returns the filtered pd.DataFrame object.
     """
-    replace_list = ["(", ")"]
-    for replace in replace_list:
-        search = search.replace(replace, "\\" + replace)
     to_keep = [
         "dataset_origin",
         "dataset_id",
@@ -38,9 +35,9 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     ]
     if not is_show:
         results = data[
-            data["title"].str.contains(search, case=False)
-            | data["keywords"].str.contains(search, case=False)
-            | data["description"].str.contains(search, case=False)
+            data["title"].str.contains(search, case=False, regex=False)
+            | data["keywords"].str.contains(search, case=False, regex=False)
+            | data["description"].str.contains(search, case=False, regex=False)
         ]
     else:
         results = data
@@ -101,6 +98,7 @@ def user_interaction() -> None:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
         bokeh_table = wm.display_bokeh(data_filtered)
+        sel_row = None
         if bokeh_table:
             sel_row = bokeh_table.get("INDEX_SELECT")
             with col_download:
