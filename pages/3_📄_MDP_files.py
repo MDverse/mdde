@@ -100,16 +100,15 @@ def user_interaction() -> None:
     wm.load_css()
     select_data = "mdp"
     data = wm.load_data()[select_data]
-    search, is_show, col_filter, col_download = wm.display_search_bar(
-        select_data)
+    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        bokeh_table = wm.display_bokeh(data_filtered)
+        bokeh_table = wm.display_bokeh(data_filtered, search)
         if bokeh_table:
-            sel_row = bokeh_table.get("INDEX_SELECT")
+            sel_row = bokeh_table.get("INDEX_SELECT_" + search)
             with col_download:
                 wm.display_export_button(sel_row, data_filtered)
             wm.display_details(sel_row, data_filtered, select_data)

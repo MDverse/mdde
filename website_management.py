@@ -108,8 +108,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(
-        label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
@@ -148,8 +147,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(
-                        map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -158,8 +156,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(
-                            user_text_input, case=False, na=False)
+                        df[column].str.contains(user_text_input, case=False, na=False)
                     ]
     return df
 
@@ -199,7 +196,7 @@ def link_cell_func() -> str:
             """
 
 
-def display_bokeh(data_filtered: pd.DataFrame) -> dict:
+def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
     """Configure, create and display the interactive bokeh datatable.
 
     Parameters
@@ -240,8 +237,7 @@ def display_bokeh(data_filtered: pd.DataFrame) -> dict:
             )
         else:
             columns.append(
-                TableColumn(field=col_name, title=col_name,
-                            formatter=content_fmt)
+                TableColumn(field=col_name, title=col_name, formatter=content_fmt)
             )
     # Remove the last column which is the URL column.
     columns.pop()
@@ -250,9 +246,9 @@ def display_bokeh(data_filtered: pd.DataFrame) -> dict:
         "indices",
         CustomJS(
             args=dict(source=source),
-            code="""
+            code=f"""
                 document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT", {detail: source.selected.indices})
+                    new CustomEvent("INDEX_SELECT_{search}", {{detail: source.selected.indices}})
                 )
                 """,
         ),
@@ -272,7 +268,7 @@ def display_bokeh(data_filtered: pd.DataFrame) -> dict:
     # Create an event to interact with our bokeh object via streamlit.
     bokeh_table = streamlit_bokeh_events(
         bokeh_plot=datatable,
-        events="INDEX_SELECT",
+        events="INDEX_SELECT_" + search,
         key="bokeh_table",
         refresh_on_update=st.session_state["changed"],
         debounce_time=0,
@@ -490,22 +486,22 @@ def display_details(
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    if "cursor" + select_data not in st.session_state:
-        st.session_state["cursor" + select_data] = 0
+    if sel_row:
+        if "cursor" + select_data not in st.session_state:
+            st.session_state["cursor" + select_data] = 0
 
-    size_selected = len(sel_row)
-    if size_selected != 0:
-        fix_cursor(size_selected, select_data)
-        update_contents(sel_row, data_filtered, select_data)
-        cursor = st.session_state["cursor" + select_data]
-        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-        with columns[0]:
-            st.write(cursor + 1, "/", size_selected, "selected")
-        display_buttons_details(columns, select_data, size_selected)
-        st.sidebar.markdown(
-            st.session_state["contents"], unsafe_allow_html=True)
-    else:
-        st.session_state["cursor" + select_data] = 0
+        size_selected = len(sel_row)
+        if size_selected != 0:
+            fix_cursor(size_selected, select_data)
+            update_contents(sel_row, data_filtered, select_data)
+            cursor = st.session_state["cursor" + select_data]
+            columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
+            with columns[0]:
+                st.write(cursor + 1, "/", size_selected, "selected")
+            display_buttons_details(columns, select_data, size_selected)
+            st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+        else:
+            st.session_state["cursor" + select_data] = 0
 
 
 def load_css() -> None:
