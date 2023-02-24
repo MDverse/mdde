@@ -361,7 +361,7 @@ def update_contents(
         **Title:** *{data["Title"]}*<br />
         **Description:**<br /> {data["Description"]}
     """
-    st.session_state["contents"] = contents
+    st.session_state["content"] = content
 
 
 def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
