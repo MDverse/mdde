@@ -39,6 +39,7 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
             data["title"].str.contains(search, case=False, regex=False)
             | data["keywords"].str.contains(search, case=False, regex=False)
             | data["description"].str.contains(search, case=False, regex=False)
+            | data["dataset_id"].str.contains(search, case=False, regex=False)
         ]
     else:
         results = data
