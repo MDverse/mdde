@@ -108,7 +108,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(
+        label="Filter dataframe on:", expanded=True)
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
@@ -147,7 +148,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(
+                        map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -156,7 +158,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(user_text_input, case=False, na=False)
+                        df[column].str.contains(
+                            user_text_input, case=False, na=False)
                     ]
     return df
 
@@ -196,7 +199,7 @@ def link_cell_func() -> str:
             """
 
 
-def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
+def display_bokeh(data_filtered: pd.DataFrame, id_search: str) -> dict:
     """Configure, create and display the interactive bokeh datatable.
 
     Parameters
@@ -210,16 +213,17 @@ def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
         returns an event dict contains our data filtered and some options.
     """
     # Store a variable to define whether the table has been modified.
-    if "data" not in st.session_state and "changed" not in st.session_state:
+    if "id_search" not in st.session_state and "changed" not in st.session_state:
         st.session_state["changed"] = False
-        st.session_state["data"] = data_filtered
+        st.session_state["id_search"] = id_search
     st.write(len(data_filtered), "elements found")
     # Create a ColumnDataSource from the dataset.
     source = ColumnDataSource(data_filtered)
     # Check if data has been changed
-    if not data_filtered.equals(st.session_state["data"]):
+    # if not data_filtered.equals(st.session_state["data"]):
+    if id_search != st.session_state["id_search"]:
         st.session_state["changed"] = True
-        st.session_state["data"] = data_filtered
+        st.session_state["id_search"] = id_search
     else:
         st.session_state["changed"] = False
     # Create two templates that will apply a hyperlink and a tooltip
@@ -237,7 +241,8 @@ def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
             )
         else:
             columns.append(
-                TableColumn(field=col_name, title=col_name, formatter=content_fmt)
+                TableColumn(field=col_name, title=col_name,
+                            formatter=content_fmt)
             )
     # Remove the last column which is the URL column.
     columns.pop()
@@ -248,7 +253,7 @@ def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
             args=dict(source=source),
             code=f"""
                 document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT_{search}", {{detail: source.selected.indices}})
+                    new CustomEvent("INDEX_SELECT_{id_search}", {{detail: source.selected.indices}})
                 )
                 """,
         ),
@@ -268,7 +273,7 @@ def display_bokeh(data_filtered: pd.DataFrame, search) -> dict:
     # Create an event to interact with our bokeh object via streamlit.
     bokeh_table = streamlit_bokeh_events(
         bokeh_plot=datatable,
-        events="INDEX_SELECT_" + search,
+        events="INDEX_SELECT_" + id_search,
         key="bokeh_table",
         refresh_on_update=st.session_state["changed"],
         debounce_time=0,
@@ -499,7 +504,8 @@ def display_details(
             with columns[0]:
                 st.write(cursor + 1, "/", size_selected, "selected")
             display_buttons_details(columns, select_data, size_selected)
-            st.sidebar.markdown(st.session_state["contents"], unsafe_allow_html=True)
+            st.sidebar.markdown(
+                st.session_state["contents"], unsafe_allow_html=True)
         else:
             st.session_state["cursor" + select_data] = 0
 
