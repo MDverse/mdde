@@ -2,7 +2,6 @@
 
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid
 import website_management as wm
 
 
@@ -42,9 +41,10 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     ]
     if not is_show:
         results = data[
-            data["title"].str.contains(search, case=False)
-            | data["file_name"].str.contains(search, case=False)
-            | data["description"].str.contains(search, case=False)
+            data["title"].str.contains(search, case=False, regex=False)
+            | data["file_name"].str.contains(search, case=False, regex=False)
+            | data["description"].str.contains(search, case=False, regex=False)
+            | data["dataset_id"].str.contains(search, case=False, regex=False)
         ]
     else:
         results = data
@@ -66,38 +66,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "URL",
     ]
     return results
-
-
-def config_options_gro(data_filtered: pd.DataFrame, page_size: int) -> list:
-    """Configure an Aggrid object with specific options for gro files searches.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        contains our data filtered by a search.
-    page_size: int
-        specifies the number of rows to display in the AgGrid table.
-
-    Returns
-    -------
-    list
-        return a list of dictionary containing all the information of the
-        configuration for our Aggrid object.
-    """
-    gridOptions = wm.config_options(data_filtered, page_size)
-    # Configuration of specific column widths
-    col_names = [column["headerName"] for column in gridOptions["columnDefs"]]
-    gridOptions["columnDefs"][col_names.index("Dataset")]["maxWidth"] = 165
-    gridOptions["columnDefs"][col_names.index("ID")]["maxWidth"] = 120
-    gridOptions["columnDefs"][col_names.index("Atom number")]["maxWidth"] = 180
-    gridOptions["columnDefs"][col_names.index("Protein")]["maxWidth"] = 145
-    gridOptions["columnDefs"][col_names.index("Lipid")]["maxWidth"] = 120
-    gridOptions["columnDefs"][col_names.index("Nucleic")]["maxWidth"] = 140
-    gridOptions["columnDefs"][col_names.index("Glucid")]["maxWidth"] = 125
-    gridOptions["columnDefs"][col_names.index("Water/Ion")]["maxWidth"] = 150
-    gridOptions["columnDefs"][col_names.index("Creation date")]["hide"] = "true"
-    gridOptions["columnDefs"][col_names.index("Authors")]["hide"] = "true"
-    return gridOptions
 
 
 def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
@@ -125,34 +93,6 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
-def display_AgGrid(data_filtered: pd.DataFrame) -> object:
-    """Configure, create and display the AgGrid object.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        a pandas dataframe filtred.
-
-    Returns
-    -------
-    object
-        returns a AgGrid object contains our data filtered and some options.
-    """
-    page_size = 20
-    st.write(len(data_filtered), "elements found")
-    # A dictionary containing all the configurations for our Aggrid objects
-    gridOptions = config_options_gro(data_filtered, page_size)
-    # Generate our Aggrid table and display it
-    grid_table = AgGrid(
-        data_filtered,
-        gridOptions=gridOptions,
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
-        theme="alpine",
-    )
-    return grid_table
-
-
 def user_interaction() -> None:
     """Control the streamlit application.
 
@@ -164,17 +104,18 @@ def user_interaction() -> None:
     select_data = "gro"
     data = wm.load_data()[select_data]
     search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
+    id_search = str(hash(""))[1:13] if is_show else str(hash(search))[1:13]
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        grid_table = display_AgGrid(data_filtered)
-        if grid_table:
-            sel_row = grid_table["selected_rows"]
+        bokeh_table = wm.display_bokeh(data_filtered, id_search)
+        if bokeh_table:
+            sel_row = bokeh_table.get("INDEX_SELECT_" + id_search)
             with col_download:
-                wm.display_export_button(sel_row)
-            wm.display_details(sel_row)
+                wm.display_export_button(sel_row, data_filtered)
+            wm.display_details(sel_row, data_filtered, select_data)
     elif search != "":
         st.write("No result found.")
 

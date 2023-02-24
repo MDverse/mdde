@@ -8,60 +8,10 @@ from pandas.api.types import (
     is_object_dtype,
 )
 from st_keyup import st_keyup
-from st_aggrid import GridOptionsBuilder, JsCode
 from datetime import datetime
-
-
-@st.cache_data
-def load_data() -> tuple:
-    """Retrieve our data and loads it into the pd.DataFrame object.
-
-    Returns
-    -------
-    tuple
-        returns an tuple contains pd.DataFrame object containing our datasets.
-    """
-    repository = ["zenodo", "figshare", "osf"]
-    dfs_merged = []
-    for name_rep in repository:
-        tmp_data_text = pd.read_csv(
-            f"data/{name_rep}_datasets_text.tsv",
-            delimiter="\t",
-            dtype={"dataset_id": str},
-        )
-        tmp_dataset = pd.read_csv(
-            f"data/{name_rep}_datasets.tsv", delimiter="\t", dtype={"dataset_id": str}
-        )
-        tmp_data_merged = pd.merge(
-            tmp_data_text,
-            tmp_dataset,
-            on=["dataset_id", "dataset_origin"],
-            validate="many_to_one",
-        )
-        print(f"{name_rep}: found {tmp_data_merged.shape[0]} datasets.")
-        dfs_merged.append(tmp_data_merged)
-    datasets = pd.concat(dfs_merged, ignore_index=True)
-    gro = pd.read_csv(
-        f"data/gromacs_gro_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
-    )
-    gro_data = pd.merge(
-        gro,
-        datasets,
-        how="left",
-        on=["dataset_id", "dataset_origin"],
-        validate="many_to_one",
-    )
-    mdp = pd.read_csv(
-        f"data/gromacs_mdp_files_info.tsv", delimiter="\t", dtype={"dataset_id": str}
-    )
-    mdp_data = pd.merge(
-        mdp,
-        datasets,
-        how="left",
-        on=["dataset_id", "dataset_origin"],
-        validate="many_to_one",
-    )
-    return datasets, gro_data, mdp_data
+from bokeh.models import ColumnDataSource, CustomJS
+from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
+from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
@@ -71,7 +21,7 @@ def load_data() -> dict:
     Returns
     -------
     dict
-        returns a dict contains pd.DataFrame object containing our datasets.
+        returns a dict containing the pd.DataFrame objects of our datasets.
     """
     dfs = {}
     datasets = pd.read_parquet(
@@ -128,6 +78,7 @@ def is_isoformat(dates: object) -> bool:
 
 def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     """Add a UI on top of a dataframe to let user filter columns.
+
     This function is based on the code from the following repository:
     https://github.com/tylerjrichards/st-filter-dataframe
 
@@ -157,9 +108,14 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(
+        label="Filter dataframe on:", expanded=True)
     with modification_container:
-        to_filter_columns = st.multiselect(label="Filter dataframe on", options=df.columns[:-1], label_visibility="collapsed")
+        to_filter_columns = st.multiselect(
+            label="Filter dataframe on",
+            options=df.columns[:-1],
+            label_visibility="collapsed",
+        )
         for column in to_filter_columns:
             left, right, _ = st.columns((1, 20, 5))
             left.write("↳")
@@ -192,7 +148,8 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(
+                        map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -201,15 +158,17 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(user_text_input, case=False, na=False)
+                        df[column].str.contains(
+                            user_text_input, case=False, na=False)
                     ]
     return df
 
 
 def content_cell_func() -> str:
-    """Return a Java script function as a string to display a tooltip.
+    """Return a JavaScript template as a string to display a tooltip.
 
-    The Java script code will be configured in the config_options function.
+    The template will be configured in the display_bokeh function.
+    The model used is the Underscore model : http://underscorejs.org/#template
 
     Returns
     -------
@@ -217,90 +176,110 @@ def content_cell_func() -> str:
         return the JS code as a string.
     """
     return """
-            function(params) {
-                return '<span title="' + params.value + '">'+params.value+'</span>';
-            };
+            <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
+            <span style='word-break: break-all;'></span>
             """
 
 
-def link_cell_func(col_name: str) -> str:
-    """Return a Java script function as a string to create a hyperlink.
+def link_cell_func() -> str:
+    """Return a JavaScript template as a string to create a hyperlink.
 
-    The Java script code will be configured in the config_options function.
-
-    Parameters
-    ----------
-    col_name: str
-        name of column contains a hyperlink.
+    The template will be configured in the display_bokeh function.
+    The model used is the Underscore model : http://underscorejs.org/#template
 
     Returns
     -------
     str
         return the JS code as a string.
     """
-    contents = f"params.node.data.{col_name}"
-    return f"""
-            function(params) {{
-                return '<a href="' + {contents} + '" target="_blank">'+ params.value+'</a>';
-            }};
+    return """
+            <a href="<%= URL %>" target="_blank" data-toggle="tooltip" title="<%= URL %>">
+                <%= value %>
+            </a>
             """
 
 
-def config_options(results: pd.DataFrame, page_size: int) -> list:
-    """Configure the Aggrid object with dedicated functions for our data.
+def display_bokeh(data_filtered: pd.DataFrame, id_search: str) -> dict:
+    """Configure, create and display the interactive bokeh datatable.
 
     Parameters
     ----------
-    results: pd.DataFrame
-        contains our data filtered by a search.
-    page_size: int
-        number of rows to display
+    data_filtered: pd.DataFrame
+        a pandas dataframe filtered.
 
     Returns
     -------
-    list
-        return a list of dictionary containing all the information of the
-        configuration for our Aggrid object.
+    object
+        returns an event dict contains our data filtered and some options.
     """
-    # Convert our dataframe into a GridOptionBuilder object
-    gb = GridOptionsBuilder.from_dataframe(results)
-    # Add a checkbox for each row
-    gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-    gb.configure_pagination(
-        enabled=True, paginationAutoPageSize=False, paginationPageSize=page_size
+    # Store a variable to define whether the table has been modified.
+    if "id_search" not in st.session_state and "changed" not in st.session_state:
+        st.session_state["changed"] = False
+        st.session_state["id_search"] = id_search
+    st.write(len(data_filtered), "elements found")
+    # Create a ColumnDataSource from the dataset.
+    source = ColumnDataSource(data_filtered)
+    # Check if data has been changed
+    # if not data_filtered.equals(st.session_state["data"]):
+    if id_search != st.session_state["id_search"]:
+        st.session_state["changed"] = True
+        st.session_state["id_search"] = id_search
+    else:
+        st.session_state["changed"] = False
+    # Create two templates that will apply a hyperlink and a tooltip
+    template_content = content_cell_func()
+    template_href = link_cell_func()
+    # Create a HTMLTemplateFormatter according to the templates.
+    content_fmt = HTMLTemplateFormatter(template=template_content)
+    href_fmt = HTMLTemplateFormatter(template=template_href)
+    # Create a TableColumn from the dataset.
+    columns = []
+    for col_name in data_filtered.columns:
+        if col_name == "ID":
+            columns.append(
+                TableColumn(field=col_name, title=col_name, formatter=href_fmt)
+            )
+        else:
+            columns.append(
+                TableColumn(field=col_name, title=col_name,
+                            formatter=content_fmt)
+            )
+    # Remove the last column which is the URL column.
+    columns.pop()
+    # Create a JavaScript code to get the selected rows.
+    source.selected.js_on_change(
+        "indices",
+        CustomJS(
+            args=dict(source=source),
+            code=f"""
+                document.dispatchEvent(
+                    new CustomEvent("INDEX_SELECT_{id_search}", {{detail: source.selected.indices}})
+                )
+                """,
+        ),
     )
-    # Add a checkbox in the first column to select all columns
-    gb.configure_column("Dataset", headerCheckboxSelection=True)
-    # Remove filters included in Aggrid
-    gb.configure_default_column(filterable=False, sortable=True, suppressMenu=True)
-    # Add a JsCode that will display the content when hovering with the mouse
-    gb.configure_columns(results.columns, cellRenderer=JsCode(content_cell_func()))
-    # Add a JsCode that will add a hyperlink to the URL column
-    gb.configure_column("ID", cellRenderer=JsCode(link_cell_func("URL")))
-    gb.configure_column("URL", hide=True)
-    # Build the dictionary that will contain all the configurations
-    gridOptions = gb.build()
-    return gridOptions
-
-
-def convert_data(sel_row: list) -> pd.DataFrame:
-    """Convert a list of dictionary into a pd.DataFrame object.
-
-    Parameters
-    ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
-
-    Returns
-    -------
-    pd.DataFrame
-        returns an pd.DataFrame object containing the selected rows of our
-        data.
-    """
-    to_export: pd.DataFrame = pd.DataFrame.from_records(sel_row)
-    if "_selectedRowNodeInfo" in to_export.columns:
-        to_export.pop("_selectedRowNodeInfo")
-    return to_export
+    # The size of the data table.
+    viewport_height = max(550, len(data_filtered) // 10)
+    # Create a DataTable from our different objects.
+    datatable = DataTable(
+        source=source,
+        columns=columns,
+        height=viewport_height,
+        selectable="checkbox",
+        index_position=None,
+        sizing_mode="stretch_both",
+        row_height=25,
+    )
+    # Create an event to interact with our bokeh object via streamlit.
+    bokeh_table = streamlit_bokeh_events(
+        bokeh_plot=datatable,
+        events="INDEX_SELECT_" + id_search,
+        key="bokeh_table",
+        refresh_on_update=st.session_state["changed"],
+        debounce_time=0,
+        override_height=viewport_height + 5,
+    )
+    return bokeh_table
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
@@ -316,7 +295,7 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     Returns
     -------
     tuple
-        contains search word, a bool for checkbox and a list for the layout of
+        contains search word, a bool for checkbox and a layout of
         the site.
     """
     st.title("MDverse")
@@ -336,16 +315,18 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     return search, is_show, col_filter, col_download
 
 
-def display_export_button(sel_row: list) -> None:
-    """Add a download button to export the selected data from the AgGrid table.
+def display_export_button(sel_row: list, data_filtered: pd.DataFrame) -> None:
+    """Add a download button to export the selected data from the bokeh table.
 
     Parameters
     ----------
     sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
+        contains the index of the selected rows.
+    data_filtered: pd.DataFrame
+        filtered dataframe.
     """
     if sel_row:
-        new_data = convert_data(sel_row)
+        new_data = data_filtered.iloc[sel_row]
         date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         st.download_button(
             label="Export selection to tsv",
@@ -355,96 +336,178 @@ def display_export_button(sel_row: list) -> None:
         )
 
 
-def update_content(sel_row: list) -> None:
+def update_contents(
+    sel_row: list, data_filtered: pd.DataFrame, select_data: str
+) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
     ----------
     sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
+    data_filtered: pd.DataFrame
+        filtered dataframe.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    selected_row = sel_row[st.session_state["cursor"]]
-    content = f"""
+    selected_row = sel_row[st.session_state["cursor" + select_data]]
+    data = data_filtered.iloc[selected_row]
+    contents = f"""
         **Dataset:**
-        [{selected_row["Dataset"]} {selected_row["ID"]}]({selected_row["URL"]})<br />
-        **Creation date:** {selected_row["Creation date"]}<br />
-        **Author(s):** {selected_row["Authors"]}<br />
-        **Title:** *{selected_row["Title"]}*<br />
-        **Description:**<br /> {selected_row["Description"]}
+        [{data["Dataset"]} {data["ID"]}]({data["URL"]})<br />
+        **Creation date:** {data["Creation date"]}<br />
+        **Author(s):** {data["Authors"]}<br />
+        **Title:** *{data["Title"]}*<br />
+        **Description:**<br /> {data["Description"]}
     """
     st.session_state["content"] = content
 
 
-def update_cursor(is_previous: bool) -> None:
-    """Change the value of the cursor by incrementing or decrementing.
+def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
+    """Change the value of the cursor by applying a specific value to it.
 
     Parameters
     ----------
-    is_previous: bool
-        determine if it should increment the cursor or decrement.
+    select_cursor: str
+        Type of increment or decrement for the cursor.
+        Values: ["backward", "previous", "next", "forward"]
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro", "mdp"]
+    size_selected: int
+        total number of selected rows.
     """
-    if is_previous:
-        st.session_state["cursor"] -= 1
+    if select_cursor == "backward":
+        st.session_state["cursor" + select_data] = 0
+    elif select_cursor == "previous":
+        st.session_state["cursor" + select_data] -= 1
+    elif select_cursor == "next":
+        st.session_state["cursor" + select_data] += 1
     else:
-        st.session_state["cursor"] += 1
+        st.session_state["cursor" + select_data] = size_selected - 1
 
 
-def fix_cursor(size_selected: int) -> None:
+def fix_cursor(size_selected: int, select_data: str) -> None:
     """Correct the cursor position according to the number of selected rows.
 
     Parameters
     ----------
     size_selected: int
         total number of selected rows.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    while st.session_state["cursor"] >= size_selected:
-        st.session_state["cursor"] -= 1
+    while st.session_state["cursor" + select_data] >= size_selected:
+        st.session_state["cursor" + select_data] -= 1
 
 
-def display_details(sel_row: list) -> None:
+def display_buttons_details(
+    columns: list, select_data: str, size_selected: int
+) -> None:
+    """Display the buttons in a structured way.
+
+    Parameters
+    ----------
+    columns: list
+        List used for the layout of the sidebar.
+        Values: ["backward", "previous", "next", "forward"]
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro", "mdp"]
+    size_selected: int
+        total number of selected rows.
+    """
+    cursor = st.session_state["cursor" + select_data]
+    disabled_previous = False if cursor - 1 >= 0 else True
+    disabled_next = False if cursor + 1 < size_selected else True
+    with columns[2]:
+        st.button(
+            "«",
+            on_click=update_cursor,
+            args=(
+                "backward",
+                select_data,
+                size_selected,
+            ),
+            key="backward",
+            disabled=disabled_previous,
+            use_container_width=True,
+        )
+        with columns[3]:
+            st.button(
+                "⬅",
+                on_click=update_cursor,
+                args=(
+                    "previous",
+                    select_data,
+                    size_selected,
+                ),
+                key="previous",
+                disabled=disabled_previous,
+                use_container_width=True,
+            )
+        with columns[4]:
+            st.button(
+                "➡",
+                on_click=update_cursor,
+                args=(
+                    "next",
+                    select_data,
+                    size_selected,
+                ),
+                key="next",
+                disabled=disabled_next,
+                use_container_width=True,
+            )
+        with columns[5]:
+            st.button(
+                "»",
+                on_click=update_cursor,
+                args=(
+                    "forward",
+                    select_data,
+                    size_selected,
+                ),
+                key="forward",
+                disabled=disabled_next,
+                use_container_width=True,
+            )
+
+
+def display_details(
+    sel_row: list, data_filtered: pd.DataFrame, select_data: str
+) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
     ----------
     sel_row: list
         contains the selected rows of our Aggrid array as a list of dictionary.
+    data_filtered: pd.DataFrame
+        filtered dataframe.
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
     """
-    if "cursor" not in st.session_state:
-        st.session_state["cursor"] = 0
+    if sel_row:
+        if "cursor" + select_data not in st.session_state:
+            st.session_state["cursor" + select_data] = 0
 
-    size_selected = len(sel_row)
-    if size_selected != 0:
-        fix_cursor(size_selected)
-        update_content(sel_row)
-        cursor = st.session_state["cursor"]
-
-        col_select, col_previous, col_next = st.sidebar.columns([2, 1, 1])
-        disabled_previous, disabled_next = False, False
-        with col_select:
-            st.write(cursor + 1, "/", size_selected, "selected")
-        with col_previous:
-            disabled_previous = False if cursor - 1 >= 0 else True
-            st.button(
-                "⬅",
-                on_click=update_cursor,
-                args=(True,),
-                key="previous",
-                disabled=disabled_previous,
-                use_container_width=True,
-            )
-        with col_next:
-            disabled_next = False if cursor + 1 < size_selected else True
-            st.button(
-                "➡",
-                on_click=update_cursor,
-                args=(False,),
-                key="next",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
-        st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
-    else:
-        st.session_state["cursor"] = 0
+        size_selected = len(sel_row)
+        if size_selected != 0:
+            fix_cursor(size_selected, select_data)
+            update_contents(sel_row, data_filtered, select_data)
+            cursor = st.session_state["cursor" + select_data]
+            columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
+            with columns[0]:
+                st.write(cursor + 1, "/", size_selected, "selected")
+            display_buttons_details(columns, select_data, size_selected)
+            st.sidebar.markdown(
+                st.session_state["contents"], unsafe_allow_html=True)
+        else:
+            st.session_state["cursor" + select_data] = 0
 
 
 def load_css() -> None:
