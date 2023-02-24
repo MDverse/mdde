@@ -361,7 +361,7 @@ def update_contents(
         **Title:** *{data["Title"]}*<br />
         **Description:**<br /> {data["Description"]}
     """
-    st.session_state["content"] = content
+    st.session_state["content"] = contents
 
 
 def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
@@ -492,8 +492,9 @@ def display_details(
         Values: ["datasets", "gro","mdp"]
     """
     if sel_row:
-        if "cursor" + select_data not in st.session_state:
+        if "cursor" + select_data not in st.session_state and "content" not in st.session_state:
             st.session_state["cursor" + select_data] = 0
+            st.session_state["content"] = ""
 
         size_selected = len(sel_row)
         if size_selected != 0:
@@ -505,7 +506,7 @@ def display_details(
                 st.write(cursor + 1, "/", size_selected, "selected")
             display_buttons_details(columns, select_data, size_selected)
             st.sidebar.markdown(
-                st.session_state["contents"], unsafe_allow_html=True)
+                st.session_state["content"], unsafe_allow_html=True)
         else:
             st.session_state["cursor" + select_data] = 0
 
