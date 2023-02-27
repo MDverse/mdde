@@ -282,6 +282,18 @@ def display_bokeh(data_filtered: pd.DataFrame, id_search: str) -> dict:
     return bokeh_table
 
 
+def display_table(data_filtered: pd.DataFrame) -> None:
+    hide_dataframe_row_index = """
+            <style>
+                .row_heading.level0 {display:none}
+                .blank {display:none}
+            </style>
+            """
+    st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
+    st.dataframe(data_filtered.assign(hack='').set_index(
+        'hack'), height=600, use_container_width=True)
+
+
 def display_search_bar(select_data: str = "datasets") -> tuple:
     """Configure the display and the parameters of the website.
 
@@ -315,43 +327,35 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     return search, is_show, col_filter, col_download
 
 
-def display_export_button(sel_row: list, data_filtered: pd.DataFrame) -> None:
+def display_export_button(data_filtered: pd.DataFrame) -> None:
     """Add a download button to export the selected data from the bokeh table.
 
     Parameters
     ----------
-    sel_row: list
-        contains the index of the selected rows.
     data_filtered: pd.DataFrame
         filtered dataframe.
     """
-    if sel_row:
-        new_data = data_filtered.iloc[sel_row]
-        date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
-        st.download_button(
-            label="Export selection to tsv",
-            data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
-            file_name=f"mdverse_{date_now}.tsv",
-            mime="text/tsv",
-        )
+    date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    st.download_button(
+        label="Export selection to tsv",
+        data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
+        file_name=f"mdverse_{date_now}.tsv",
+        mime="text/tsv",
+    )
 
 
-def update_contents(
-    sel_row: list, data_filtered: pd.DataFrame, select_data: str
-) -> None:
+def update_contents(data_filtered: pd.DataFrame, select_data: str) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
     ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
     data_filtered: pd.DataFrame
         filtered dataframe.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    selected_row = sel_row[st.session_state["cursor" + select_data]]
+    selected_row = st.session_state["cursor" + select_data]
     data = data_filtered.iloc[selected_row]
     contents = f"""
         **Dataset:**
@@ -476,39 +480,34 @@ def display_buttons_details(
             )
 
 
-def display_details(
-    sel_row: list, data_filtered: pd.DataFrame, select_data: str
-) -> None:
+def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
     ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
     data_filtered: pd.DataFrame
         filtered dataframe.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    if sel_row:
-        if "cursor" + select_data not in st.session_state and "content" not in st.session_state:
-            st.session_state["cursor" + select_data] = 0
-            st.session_state["content"] = ""
+    if "cursor" + select_data not in st.session_state or "content" not in st.session_state:
+        st.session_state["cursor" + select_data] = 0
+        st.session_state["content"] = ""
 
-        size_selected = len(sel_row)
-        if size_selected != 0:
-            fix_cursor(size_selected, select_data)
-            update_contents(sel_row, data_filtered, select_data)
-            cursor = st.session_state["cursor" + select_data]
-            columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-            with columns[0]:
-                st.write(cursor + 1, "/", size_selected, "selected")
-            display_buttons_details(columns, select_data, size_selected)
-            st.sidebar.markdown(
-                st.session_state["content"], unsafe_allow_html=True)
-        else:
-            st.session_state["cursor" + select_data] = 0
+    size_selected = len(data_filtered)
+    if size_selected != 0:
+        fix_cursor(size_selected, select_data)
+        update_contents(data_filtered, select_data)
+        cursor = st.session_state["cursor" + select_data]
+        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
+        with columns[0]:
+            st.write(cursor + 1, "/", size_selected, "selected")
+        display_buttons_details(columns, select_data, size_selected)
+        st.sidebar.markdown(
+            st.session_state["content"], unsafe_allow_html=True)
+    else:
+        st.session_state["cursor" + select_data] = 0
 
 
 def load_css() -> None:

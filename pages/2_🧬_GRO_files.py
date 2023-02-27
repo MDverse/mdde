@@ -104,18 +104,15 @@ def user_interaction() -> None:
     select_data = "gro"
     data = wm.load_data()[select_data]
     search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
-    id_search = str(hash(""))[1:13] if is_show else str(hash(search))[1:13]
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        bokeh_table = wm.display_bokeh(data_filtered, id_search)
-        if bokeh_table:
-            sel_row = bokeh_table.get("INDEX_SELECT_" + id_search)
-            with col_download:
-                wm.display_export_button(sel_row, data_filtered)
-            wm.display_details(sel_row, data_filtered, select_data)
+        wm.display_table(data_filtered)
+        with col_download:
+            wm.display_export_button(data_filtered)
+        wm.display_details(data_filtered, select_data)
     elif search != "":
         st.write("No result found.")
 
