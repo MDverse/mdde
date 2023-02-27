@@ -3,7 +3,6 @@
 import streamlit as st
 import pandas as pd
 import website_management as wm
-import re
 
 
 @st.cache_data

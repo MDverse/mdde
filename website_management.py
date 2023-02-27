@@ -9,9 +9,6 @@ from pandas.api.types import (
 )
 from st_keyup import st_keyup
 from datetime import datetime
-from bokeh.models import ColumnDataSource, CustomJS
-from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
-from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 @st.cache_data
@@ -197,89 +194,6 @@ def link_cell_func() -> str:
                 <%= value %>
             </a>
             """
-
-
-def display_bokeh(data_filtered: pd.DataFrame, id_search: str) -> dict:
-    """Configure, create and display the interactive bokeh datatable.
-
-    Parameters
-    ----------
-    data_filtered: pd.DataFrame
-        a pandas dataframe filtered.
-
-    Returns
-    -------
-    object
-        returns an event dict contains our data filtered and some options.
-    """
-    # Store a variable to define whether the table has been modified.
-    if "id_search" not in st.session_state and "changed" not in st.session_state:
-        st.session_state["changed"] = False
-        st.session_state["id_search"] = id_search
-    st.write(len(data_filtered), "elements found")
-    # Create a ColumnDataSource from the dataset.
-    source = ColumnDataSource(data_filtered)
-    # Check if data has been changed
-    # if not data_filtered.equals(st.session_state["data"]):
-    if id_search != st.session_state["id_search"]:
-        st.session_state["changed"] = True
-        st.session_state["id_search"] = id_search
-    else:
-        st.session_state["changed"] = False
-    # Create two templates that will apply a hyperlink and a tooltip
-    template_content = content_cell_func()
-    template_href = link_cell_func()
-    # Create a HTMLTemplateFormatter according to the templates.
-    content_fmt = HTMLTemplateFormatter(template=template_content)
-    href_fmt = HTMLTemplateFormatter(template=template_href)
-    # Create a TableColumn from the dataset.
-    columns = []
-    for col_name in data_filtered.columns:
-        if col_name == "ID":
-            columns.append(
-                TableColumn(field=col_name, title=col_name, formatter=href_fmt)
-            )
-        else:
-            columns.append(
-                TableColumn(field=col_name, title=col_name,
-                            formatter=content_fmt)
-            )
-    # Remove the last column which is the URL column.
-    columns.pop()
-    # Create a JavaScript code to get the selected rows.
-    source.selected.js_on_change(
-        "indices",
-        CustomJS(
-            args=dict(source=source),
-            code=f"""
-                document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT_{id_search}", {{detail: source.selected.indices}})
-                )
-                """,
-        ),
-    )
-    # The size of the data table.
-    viewport_height = max(550, len(data_filtered) // 10)
-    # Create a DataTable from our different objects.
-    datatable = DataTable(
-        source=source,
-        columns=columns,
-        height=viewport_height,
-        selectable="checkbox",
-        index_position=None,
-        sizing_mode="stretch_both",
-        row_height=25,
-    )
-    # Create an event to interact with our bokeh object via streamlit.
-    bokeh_table = streamlit_bokeh_events(
-        bokeh_plot=datatable,
-        events="INDEX_SELECT_" + id_search,
-        key="bokeh_table",
-        refresh_on_update=st.session_state["changed"],
-        debounce_time=0,
-        override_height=viewport_height + 5,
-    )
-    return bokeh_table
 
 
 def display_table(data_filtered: pd.DataFrame) -> None:
