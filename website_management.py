@@ -199,7 +199,7 @@ def display_table(data_filtered: pd.DataFrame) -> None:
         data_filtered,
         classes="display nowrap cell-border",
         dom="tpr",
-        style="width:100%",
+        style="width:100%;font-family:None",
         columnDefs=[
             {
                 "targets": "_all",
