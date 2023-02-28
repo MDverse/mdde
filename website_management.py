@@ -9,9 +9,8 @@ from pandas.api.types import (
 )
 from st_keyup import st_keyup
 from datetime import datetime
-from bokeh.models import ColumnDataSource, CustomJS
-from bokeh.models import DataTable, TableColumn, HTMLTemplateFormatter
-from streamlit_bokeh_events import streamlit_bokeh_events
+import itables
+from itables import JavascriptFunction
 
 
 @st.cache_data
@@ -164,28 +163,12 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     return df
 
 
-def content_cell_func() -> str:
-    """Return a JavaScript template as a string to display a tooltip.
+def link_content_func() -> str:
+    """Return a JavaScript template as a string to display a tooltip and href.
 
-    The template will be configured in the display_bokeh function.
-    The model used is the Underscore model : http://underscorejs.org/#template
-
-    Returns
-    -------
-    str
-        return the JS code as a string.
-    """
-    return """
-            <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
-            <span style='word-break: break-all;'></span>
-            """
-
-
-def link_cell_func() -> str:
-    """Return a JavaScript template as a string to create a hyperlink.
-
-    The template will be configured in the display_bokeh function.
-    The model used is the Underscore model : http://underscorejs.org/#template
+    The template create a hyperlink to a specifi column and display a tooltip
+    for each cells of the table. The template will be configured in the 
+    display_table function.
 
     Returns
     -------
@@ -193,93 +176,37 @@ def link_cell_func() -> str:
         return the JS code as a string.
     """
     return """
-            <a href="<%= URL %>" target="_blank" data-toggle="tooltip" title="<%= URL %>">
-                <%= value %>
-            </a>
+            function (td, cellData, rowData, row, col) {
+                if (col == 2) {
+                    td.innerHTML = "<a href="+rowData[col-2]+" target='_blank'>"+cellData+"</a>";
+                }
+                td.setAttribute('title', cellData);
+            }
             """
 
 
-def display_bokeh(data_filtered: pd.DataFrame, id_search: str) -> dict:
-    """Configure, create and display the interactive bokeh datatable.
+def display_table(data_filtered: pd.DataFrame) -> None:
+    """Display a table of the query data.
 
     Parameters
     ----------
     data_filtered: pd.DataFrame
-        a pandas dataframe filtered.
-
-    Returns
-    -------
-    object
-        returns an event dict contains our data filtered and some options.
+        filtered dataframe.
     """
-    # Store a variable to define whether the table has been modified.
-    if "id_search" not in st.session_state and "changed" not in st.session_state:
-        st.session_state["changed"] = False
-        st.session_state["id_search"] = id_search
     st.write(len(data_filtered), "elements found")
-    # Create a ColumnDataSource from the dataset.
-    source = ColumnDataSource(data_filtered)
-    # Check if data has been changed
-    # if not data_filtered.equals(st.session_state["data"]):
-    if id_search != st.session_state["id_search"]:
-        st.session_state["changed"] = True
-        st.session_state["id_search"] = id_search
-    else:
-        st.session_state["changed"] = False
-    # Create two templates that will apply a hyperlink and a tooltip
-    template_content = content_cell_func()
-    template_href = link_cell_func()
-    # Create a HTMLTemplateFormatter according to the templates.
-    content_fmt = HTMLTemplateFormatter(template=template_content)
-    href_fmt = HTMLTemplateFormatter(template=template_href)
-    # Create a TableColumn from the dataset.
-    columns = []
-    for col_name in data_filtered.columns:
-        if col_name == "ID":
-            columns.append(
-                TableColumn(field=col_name, title=col_name, formatter=href_fmt)
-            )
-        else:
-            columns.append(
-                TableColumn(field=col_name, title=col_name,
-                            formatter=content_fmt)
-            )
-    # Remove the last column which is the URL column.
-    columns.pop()
-    # Create a JavaScript code to get the selected rows.
-    source.selected.js_on_change(
-        "indices",
-        CustomJS(
-            args=dict(source=source),
-            code=f"""
-                document.dispatchEvent(
-                    new CustomEvent("INDEX_SELECT_{id_search}", {{detail: source.selected.indices}})
-                )
-                """,
-        ),
-    )
-    # The size of the data table.
-    viewport_height = max(550, len(data_filtered) // 10)
-    # Create a DataTable from our different objects.
-    datatable = DataTable(
-        source=source,
-        columns=columns,
-        height=viewport_height,
-        selectable="checkbox",
-        index_position=None,
-        sizing_mode="stretch_both",
-        row_height=25,
-    )
-    # Create an event to interact with our bokeh object via streamlit.
-    bokeh_table = streamlit_bokeh_events(
-        bokeh_plot=datatable,
-        events="INDEX_SELECT_" + id_search,
-        key="bokeh_table",
-        refresh_on_update=st.session_state["changed"],
-        debounce_time=0,
-        override_height=viewport_height + 5,
-    )
-    return bokeh_table
+    data_filtered = data_filtered.reset_index(drop=True)
+    st.components.v1.html(itables.to_html_datatable(
+        data_filtered,
+        classes="display nowrap cell-border",
+        dom="tpr",
+        columnDefs=[
+            {
+                "targets": "_all",
+                "createdCell": JavascriptFunction(link_content_func()),
+            }
+        ],
+    ), height=450)
+    itables.init_notebook_mode(all_interactive=True)
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
@@ -315,43 +242,35 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     return search, is_show, col_filter, col_download
 
 
-def display_export_button(sel_row: list, data_filtered: pd.DataFrame) -> None:
+def display_export_button(data_filtered: pd.DataFrame) -> None:
     """Add a download button to export the selected data from the bokeh table.
 
     Parameters
     ----------
-    sel_row: list
-        contains the index of the selected rows.
     data_filtered: pd.DataFrame
         filtered dataframe.
     """
-    if sel_row:
-        new_data = data_filtered.iloc[sel_row]
-        date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
-        st.download_button(
-            label="Export selection to tsv",
-            data=new_data.to_csv(sep="\t", index=False).encode("utf-8"),
-            file_name=f"mdverse_{date_now}.tsv",
-            mime="text/tsv",
-        )
+    date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    st.download_button(
+        label="Export selection to tsv",
+        data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
+        file_name=f"mdverse_{date_now}.tsv",
+        mime="text/tsv",
+    )
 
 
-def update_contents(
-    sel_row: list, data_filtered: pd.DataFrame, select_data: str
-) -> None:
+def update_contents(data_filtered: pd.DataFrame, select_data: str) -> None:
     """Change the content display according to the cursor position.
 
     Parameters
     ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
     data_filtered: pd.DataFrame
         filtered dataframe.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    selected_row = sel_row[st.session_state["cursor" + select_data]]
+    selected_row = st.session_state["cursor" + select_data]
     data = data_filtered.iloc[selected_row]
     contents = f"""
         **Dataset:**
@@ -476,39 +395,34 @@ def display_buttons_details(
             )
 
 
-def display_details(
-    sel_row: list, data_filtered: pd.DataFrame, select_data: str
-) -> None:
+def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
     """Show the details of the selected rows in the sidebar.
 
     Parameters
     ----------
-    sel_row: list
-        contains the selected rows of our Aggrid array as a list of dictionary.
     data_filtered: pd.DataFrame
         filtered dataframe.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    if sel_row:
-        if "cursor" + select_data not in st.session_state and "content" not in st.session_state:
-            st.session_state["cursor" + select_data] = 0
-            st.session_state["content"] = ""
+    if "cursor" + select_data not in st.session_state or "content" not in st.session_state:
+        st.session_state["cursor" + select_data] = 0
+        st.session_state["content"] = ""
 
-        size_selected = len(sel_row)
-        if size_selected != 0:
-            fix_cursor(size_selected, select_data)
-            update_contents(sel_row, data_filtered, select_data)
-            cursor = st.session_state["cursor" + select_data]
-            columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-            with columns[0]:
-                st.write(cursor + 1, "/", size_selected, "selected")
-            display_buttons_details(columns, select_data, size_selected)
-            st.sidebar.markdown(
-                st.session_state["content"], unsafe_allow_html=True)
-        else:
-            st.session_state["cursor" + select_data] = 0
+    size_selected = len(data_filtered)
+    if size_selected != 0:
+        fix_cursor(size_selected, select_data)
+        update_contents(data_filtered, select_data)
+        cursor = st.session_state["cursor" + select_data]
+        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
+        with columns[0]:
+            st.write(cursor + 1, "/", size_selected, "selected")
+        display_buttons_details(columns, select_data, size_selected)
+        st.sidebar.markdown(
+            st.session_state["content"], unsafe_allow_html=True)
+    else:
+        st.session_state["cursor" + select_data] = 0
 
 
 def load_css() -> None:
