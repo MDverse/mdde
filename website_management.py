@@ -10,6 +10,7 @@ from pandas.api.types import (
 from st_keyup import st_keyup
 from datetime import datetime
 import itables
+from itables import JavascriptCode, JavascriptFunction
 
 
 @st.cache_data
@@ -162,69 +163,70 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     return df
 
 
-def content_cell_func() -> str:
-    """Return a JavaScript template as a string to display a tooltip.
+def link_content_func() -> str:
+    """Return a JavaScript template as a string to display a tooltip and href.
 
-    The template will be configured in the display_bokeh function.
-    The model used is the Underscore model : http://underscorejs.org/#template
-
-    Returns
-    -------
-    str
-        return the JS code as a string.
-    """
-    return """
-            <span href="#" data-toggle="tooltip" title="<%= value %>"><%= value %></span>
-            <span style='word-break: break-all;'></span>
-            """
-
-
-def link_cell_func() -> str:
-    """Return a JavaScript template as a string to create a hyperlink.
-
-    The template will be configured in the display_bokeh function.
-    The model used is the Underscore model : http://underscorejs.org/#template
+    The template create a hyperlink to a specifi column and display a tooltip
+    for each cells of the table. The template will be configured in the 
+    display_table function.
 
     Returns
     -------
     str
         return the JS code as a string.
     """
-    return """
-            <a href="<%= URL %>" target="_blank" data-toggle="tooltip" title="<%= URL %>">
-                <%= value %>
-            </a>
+    return f"""
+            function (td, cellData, rowData, row, col) {{
+                if (col == 1) {{
+                    td.innerHTML = "<a href="+rowData[col+6]+" target='_blank'>"+cellData+"</a>";
+                }}
+                td.setAttribute('title', cellData);
+            }}
             """
 
 
-def display_table(data_filtered: pd.DataFrame) -> None:
-    st.write(len(data_filtered), "elements found")
-    data_filtered = data_filtered.reset_index(drop=True)
-    # th = header
-    # td = cell
+def load_css_table() -> None:
     itables.options.css = """
     .itables table td { 
         word-wrap: break-word;
         max-width: 50px;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-size: smaller;
     }
+    
     .itables table td:nth-child(3), .itables table td:nth-child(6) {
-        max-width: 280px;
+        max-width: 300px;
     }
-    .itables table th { word-wrap: break-word; max-width: 150px;}
+    
+    .itables table th { 
+        word-wrap: break-word;
+        max-width: 150px;
+        font-size: smaller;
+    }
+    
+    .itables table th:nth-child(8), .itables table td:nth-child(8){
+        display:none;
+    }
     """
+
+
+def display_table(data_filtered: pd.DataFrame) -> None:
+    st.write(len(data_filtered), "elements found")
+    data_filtered = data_filtered.reset_index(drop=True)
+    load_css_table()
     st.components.v1.html(itables.to_html_datatable(
-        data_filtered.iloc[:, :-1],
+        data_filtered,
         classes="display nowrap cell-border",
         dom="tpr",
+        columnDefs=[
+            {
+                "targets": "_all",
+                "createdCell": JavascriptFunction(link_content_func()),
+            }
+        ],
     ), height=450)
     itables.init_notebook_mode(all_interactive=True)
-    # st.experimental_data_editor(
-    #     data_filtered, num_rows="dynamic", disabled=False, key="data", on_change=write_hello)
-    # st.write(st.session_state["data"])
-    # st.write(data_filtered.to_html(index=False))
-    # st.dataframe(data_filtered, height=600, use_container_width=True)
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
