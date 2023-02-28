@@ -175,13 +175,13 @@ def link_content_func() -> str:
     str
         return the JS code as a string.
     """
-    return f"""
-            function (td, cellData, rowData, row, col) {{
-                if (col == 1) {{
-                    td.innerHTML = "<a href="+rowData[col+6]+" target='_blank'>"+cellData+"</a>";
-                }}
+    return """
+            function (td, cellData, rowData, row, col) {
+                if (col == 2) {
+                    td.innerHTML = "<a href="+rowData[col-1]+" target='_blank'>"+cellData+"</a>";
+                }
                 td.setAttribute('title', cellData);
-            }}
+            }
             """
 
 
@@ -195,7 +195,7 @@ def load_css_table() -> None:
         font-size: smaller;
     }
     
-    .itables table td:nth-child(3), .itables table td:nth-child(6) {
+    .itables table td:nth-child(4), .itables table td:nth-child(7) {
         max-width: 300px;
     }
     
@@ -205,7 +205,7 @@ def load_css_table() -> None:
         font-size: smaller;
     }
     
-    .itables table th:nth-child(8), .itables table td:nth-child(8){
+    .itables table th:nth-child(1), .itables table td:nth-child(1){
         display:none;
     }
     """

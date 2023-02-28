@@ -24,6 +24,7 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         returns the filtered pd.DataFrame object.
     """
     to_keep = [
+        "dataset_url",
         "dataset_origin",
         "dataset_id",
         "title",
@@ -37,7 +38,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "has_nucleic",
         "has_glucid",
         "has_water_ion",
-        "dataset_url",
     ]
     if not is_show:
         results = data[
@@ -50,6 +50,7 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         results = data
     results = results[to_keep]
     results.columns = [
+        "URL",
         "Dataset",
         "ID",
         "Title",
@@ -63,7 +64,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "Nucleic",
         "Glucid",
         "Water/Ion",
-        "URL",
     ]
     return results
 
