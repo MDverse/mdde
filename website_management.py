@@ -178,7 +178,7 @@ def link_content_func() -> str:
     return """
             function (td, cellData, rowData, row, col) {
                 if (col == 2) {
-                    td.innerHTML = "<a href="+rowData[col-1]+" target='_blank'>"+cellData+"</a>";
+                    td.innerHTML = "<a href="+rowData[col-2]+" target='_blank'>"+cellData+"</a>";
                 }
                 td.setAttribute('title', cellData);
             }
