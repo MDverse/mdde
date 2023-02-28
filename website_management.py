@@ -10,7 +10,7 @@ from pandas.api.types import (
 from st_keyup import st_keyup
 from datetime import datetime
 import itables
-from itables import JavascriptCode, JavascriptFunction
+from itables import JavascriptFunction
 
 
 @st.cache_data
@@ -185,36 +185,16 @@ def link_content_func() -> str:
             """
 
 
-def load_css_table() -> None:
-    itables.options.css = """
-    .itables table td { 
-        word-wrap: break-word;
-        max-width: 50px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: smaller;
-    }
-    
-    .itables table td:nth-child(4), .itables table td:nth-child(7) {
-        max-width: 300px;
-    }
-    
-    .itables table th { 
-        word-wrap: break-word;
-        max-width: 150px;
-        font-size: smaller;
-    }
-    
-    .itables table th:nth-child(1), .itables table td:nth-child(1){
-        display:none;
-    }
-    """
-
-
 def display_table(data_filtered: pd.DataFrame) -> None:
+    """Display a table of the query data.
+
+    Parameters
+    ----------
+    data_filtered: pd.DataFrame
+        filtered dataframe.
+    """
     st.write(len(data_filtered), "elements found")
     data_filtered = data_filtered.reset_index(drop=True)
-    load_css_table()
     st.components.v1.html(itables.to_html_datatable(
         data_filtered,
         classes="display nowrap cell-border",

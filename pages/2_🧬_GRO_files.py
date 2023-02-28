@@ -3,6 +3,7 @@
 import streamlit as st
 import pandas as pd
 import website_management as wm
+import itables
 
 
 @st.cache_data
@@ -93,6 +94,29 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
         return pd.DataFrame()
 
 
+def load_css_table() -> None:
+    """Load a css style."""
+    itables.options.css = """
+    .itables table td { 
+        word-wrap: break-word;
+        max-width: 50px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+    }
+    
+    .itables table th { 
+        word-wrap: break-word;
+        max-width: 150px;
+        font-size: 11px;
+    }
+    
+    .itables table th:nth-child(1), .itables table td:nth-child(1){
+        display:none;
+    }
+    """
+
+
 def user_interaction() -> None:
     """Control the streamlit application.
 
@@ -103,12 +127,14 @@ def user_interaction() -> None:
     wm.load_css()
     select_data = "gro"
     data = wm.load_data()[select_data]
-    search, is_show, col_filter, col_download = wm.display_search_bar(select_data)
+    search, is_show, col_filter, col_download = wm.display_search_bar(
+        select_data)
     results = search_processing(data=data, search=search, is_show=is_show)
     if not results.empty:
         with col_filter:
             add_filter = st.checkbox("Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
+        load_css_table()
         wm.display_table(data_filtered)
         with col_download:
             wm.display_export_button(data_filtered)
