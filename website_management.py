@@ -9,6 +9,7 @@ from pandas.api.types import (
 )
 from st_keyup import st_keyup
 from datetime import datetime
+import itables
 
 
 @st.cache_data
@@ -196,16 +197,38 @@ def link_cell_func() -> str:
             """
 
 
+def write_hello():
+    st.sidebar.write("Helloo")
+
+
 def display_table(data_filtered: pd.DataFrame) -> None:
-    hide_dataframe_row_index = """
-            <style>
-                .row_heading.level0 {display:none}
-                .blank {display:none}
-            </style>
-            """
-    st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
-    st.dataframe(data_filtered.assign(hack='').set_index(
-        'hack'), height=600, use_container_width=True)
+    st.write(len(data_filtered), "elements found")
+    data_filtered = data_filtered.reset_index(drop=True)
+    # th = header
+    # td = cell
+    itables.options.css = """
+    .itables table td { 
+        word-wrap: break-word;
+        max-width: 50px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .itables table td:nth-child(3), .itables table td:nth-child(6) {
+        max-width: 280px;
+    }
+    .itables table th { word-wrap: break-word; max-width: 150px;}
+    """
+    st.components.v1.html(itables.to_html_datatable(
+        data_filtered.iloc[:, :-1],
+        classes="display nowrap cell-border",
+        dom="tpr",
+    ), height=450)
+    itables.init_notebook_mode(all_interactive=True)
+    # st.experimental_data_editor(
+    #     data_filtered, num_rows="dynamic", disabled=False, key="data", on_change=write_hello)
+    # st.write(st.session_state["data"])
+    # st.write(data_filtered.to_html(index=False))
+    # st.dataframe(data_filtered, height=600, use_container_width=True)
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
