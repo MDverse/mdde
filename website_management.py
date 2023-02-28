@@ -112,7 +112,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
-            options=df.columns[:-1],
+            options=df.columns[:-1].drop(["URL", "ID"], errors="ignore"),
             label_visibility="collapsed",
         )
         for column in to_filter_columns:
@@ -193,12 +193,13 @@ def display_table(data_filtered: pd.DataFrame) -> None:
     data_filtered: pd.DataFrame
         filtered dataframe.
     """
-    st.write(len(data_filtered), "elements found")
+    st.write(f"{len(data_filtered)} elements found")
     data_filtered = data_filtered.reset_index(drop=True)
     st.components.v1.html(itables.to_html_datatable(
         data_filtered,
         classes="display nowrap cell-border",
         dom="tpr",
+        style="width:100%",
         columnDefs=[
             {
                 "targets": "_all",
@@ -229,11 +230,11 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
     placeholder = "Enter search term (for instance: Covid, POPC, Gromacs, CHARMM36)"
     label_search = ""
     if select_data == "datasets":
-        label_search = "Datasets search"
+        label_search = "Datasets quick search"
     elif select_data == "gro":
-        label_search = ".gro files search"
+        label_search = ".gro files quick search"
     elif select_data == "mdp":
-        label_search = ".mdp files search"
+        label_search = ".mdp files quick search"
     col_keyup, col_show, col_filter, col_download = st.columns([3, 1, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
