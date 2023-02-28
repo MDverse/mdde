@@ -197,10 +197,6 @@ def link_cell_func() -> str:
             """
 
 
-def write_hello():
-    st.sidebar.write("Helloo")
-
-
 def display_table(data_filtered: pd.DataFrame) -> None:
     st.write(len(data_filtered), "elements found")
     data_filtered = data_filtered.reset_index(drop=True)
