@@ -85,6 +85,10 @@ def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
 def load_css_table() -> None:
     """Load a css style."""
     itables.options.css = """
+    .itables table {
+        font-family: 'sans-serif';
+    }
+
     .itables table td { 
         word-wrap: break-word;
         max-width: 50px;
@@ -100,7 +104,7 @@ def load_css_table() -> None:
     .itables table th { 
         word-wrap: break-word;
         max-width: 150px;
-        font-size: 11px;
+        font-size: 12px;
     }
     
     .itables table th:nth-child(1), .itables table td:nth-child(1){
