@@ -5,3 +5,4 @@ pyarrow
 matplotlib
 streamlit>=1.18
 streamlit-keyup
+itables
