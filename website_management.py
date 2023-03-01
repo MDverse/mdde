@@ -422,7 +422,7 @@ def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
         cursor = st.session_state["cursor" + select_data]
         columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
         with columns[0]:
-            st.write(cursor + 1, "/", size_selected, "selected")
+            st.write(f"{cursor + 1} / {size_selected} selected")
         display_buttons_details(columns, select_data, size_selected)
         st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
