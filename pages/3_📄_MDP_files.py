@@ -95,11 +95,11 @@ def load_css_table() -> None:
         font-size: 11px;
     }
     
-    .itables table th:nth-child(1), .itables table td:nth-child(1){
+    .itables table th:nth-child(1), .itables table td:nth-child(1) {
         display:none;
     }
     
-    a:link, a:visited{
+    a:link, a:visited {
         color: rgb(51, 125, 255);
     }
     
@@ -120,8 +120,7 @@ def user_interaction() -> None:
     wm.load_css()
     select_data = "mdp"
     data = wm.load_data()[select_data]
-    search, col_filter, col_download = wm.display_search_bar(
-        select_data)
+    search, col_filter, col_download = wm.display_search_bar(select_data)
     results = request_search(data, search)
     if not results.empty:
         with col_filter:

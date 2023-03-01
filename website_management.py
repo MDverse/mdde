@@ -107,8 +107,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
             except Exception:
                 pass
 
-    modification_container = st.expander(
-        label="Filter dataframe on:", expanded=True)
+    modification_container = st.expander(label="Filter dataframe on:", expanded=True)
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
@@ -147,8 +146,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                     ),
                 )
                 if len(user_date_input) == 2:
-                    user_date_input = tuple(
-                        map(pd.to_datetime, user_date_input))
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[tmp_col[column].between(start_date, end_date)]
             else:
@@ -157,8 +155,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
                 )
                 if user_text_input:
                     df = df[
-                        df[column].str.contains(
-                            user_text_input, case=False, na=False)
+                        df[column].str.contains(user_text_input, case=False, na=False)
                     ]
     return df
 
@@ -167,7 +164,7 @@ def link_content_func() -> str:
     """Return a JavaScript template as a string to display a tooltip and href.
 
     The template create a hyperlink to a specifi column and display a tooltip
-    for each cells of the table. The template will be configured in the 
+    for each cells of the table. The template will be configured in the
     display_table function.
 
     Returns
@@ -195,21 +192,24 @@ def display_table(data_filtered: pd.DataFrame) -> None:
     """
     st.write(f"{len(data_filtered)} elements found")
     data_filtered = data_filtered.reset_index(drop=True)
-    st.components.v1.html(itables.to_html_datatable(
-        data_filtered,
-        classes="display nowrap cell-border",
-        dom="ltpr",
-        lengthMenu=[15, 20, 25, 50, 100],
-        style="width:100%",
-        columnDefs=[
-            {
-                "targets": "_all",
-                "createdCell": JavascriptFunction(link_content_func()),
-            }
-        ],
-        scrollY="500px",
-        scrollX=True,
-    ), height=630)
+    st.components.v1.html(
+        itables.to_html_datatable(
+            data_filtered,
+            classes="display nowrap cell-border",
+            dom="ltpr",
+            lengthMenu=[15, 20, 25, 50, 100],
+            style="width:100%",
+            columnDefs=[
+                {
+                    "targets": "_all",
+                    "createdCell": JavascriptFunction(link_content_func()),
+                }
+            ],
+            scrollY="500px",
+            scrollX=True,
+        ),
+        height=630,
+    )
     itables.init_notebook_mode(all_interactive=True)
 
 
@@ -408,7 +408,10 @@ def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
     """
-    if "cursor" + select_data not in st.session_state or "content" not in st.session_state:
+    if (
+        "cursor" + select_data not in st.session_state
+        or "content" not in st.session_state
+    ):
         st.session_state["cursor" + select_data] = 0
         st.session_state["content"] = ""
 
@@ -421,8 +424,7 @@ def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
         with columns[0]:
             st.write(cursor + 1, "/", size_selected, "selected")
         display_buttons_details(columns, select_data, size_selected)
-        st.sidebar.markdown(
-            st.session_state["content"], unsafe_allow_html=True)
+        st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0
 
