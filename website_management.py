@@ -209,7 +209,7 @@ def display_table(data_filtered: pd.DataFrame) -> None:
         ],
         scrollY="500px",
         scrollX=True,
-    ), height=620)
+    ), height=630)
     itables.init_notebook_mode(all_interactive=True)
 
 

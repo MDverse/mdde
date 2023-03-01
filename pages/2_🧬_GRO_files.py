@@ -100,6 +100,15 @@ def load_css_table() -> None:
     .itables table th:nth-child(1), .itables table td:nth-child(1){
         display:none;
     }
+    
+    a:link, a:visited{
+        color: rgb(51, 125, 255);
+    }
+    
+    .itables {
+        background: white;
+        padding: 10px;
+    }
     """
 
 
