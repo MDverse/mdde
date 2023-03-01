@@ -28,3 +28,8 @@ dataset_agg.index.name = "Dataset origin"
 st.write("Amount of data available:")
 st.dataframe(dataset_agg.style.format(thousands=",", precision=0))
 
+gro_df = wm.load_data()["gro"]
+st.write(f"{len(gro_df)} Gromacs GRO files")
+
+mdp_df = wm.load_data()["mdp"]
+st.write(f"{len(mdp_df)} Gromacs MDP files")
