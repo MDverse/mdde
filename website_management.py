@@ -198,7 +198,8 @@ def display_table(data_filtered: pd.DataFrame) -> None:
     st.components.v1.html(itables.to_html_datatable(
         data_filtered,
         classes="display nowrap cell-border",
-        dom="tpr",
+        dom="ltpr",
+        lengthMenu=[15, 20, 25, 50, 100],
         style="width:100%",
         columnDefs=[
             {
@@ -206,7 +207,9 @@ def display_table(data_filtered: pd.DataFrame) -> None:
                 "createdCell": JavascriptFunction(link_content_func()),
             }
         ],
-    ), height=450)
+        scrollY="500px",
+        scrollX=True,
+    ), height=620)
     itables.init_notebook_mode(all_interactive=True)
 
 

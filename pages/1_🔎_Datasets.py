@@ -91,10 +91,16 @@ def load_css_table() -> None:
 
     .itables table td { 
         word-wrap: break-word;
+        min-width: 50px;
         max-width: 50px;
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 12px;
+    }
+    
+    .itables table td:nth-child(3){
+        min-width: 80px;
+        max-width: 80px;
     }
     
     .itables table td:nth-child(4), .itables table td:nth-child(7) {
@@ -103,7 +109,6 @@ def load_css_table() -> None:
     
     .itables table th { 
         word-wrap: break-word;
-        max-width: 150px;
         font-size: 12px;
     }
     
