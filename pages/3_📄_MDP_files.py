@@ -7,7 +7,7 @@ import itables
 
 
 @st.cache_data
-def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFrame:
+def request_search(data: pd.DataFrame, search: str) -> pd.DataFrame:
     """Search the data in the pd.DataFrame for the desired value.
 
     Parameters
@@ -16,8 +16,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         contains all the information from our extracted MD data.
     search: str
         contains the searched keyword.
-    is_show: bool
-        determines whether all data should be shown.
 
     Returns
     -------
@@ -39,7 +37,7 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
         "thermostat",
         "barostat",
     ]
-    if not is_show:
+    if search:
         results = data[
             data["title"].str.contains(search, case=False, regex=False)
             | data["file_name"].str.contains(search, case=False, regex=False)
@@ -67,31 +65,6 @@ def request_search(data: pd.DataFrame, search: str, is_show: bool) -> pd.DataFra
     return results
 
 
-def search_processing(data: pd.DataFrame, search: str, is_show: bool) -> tuple:
-    """Search the table for the word the user is looking for.
-
-    Parameters
-    ----------
-    data: pd.DataFrame
-        a pandas dataframe contains our datasets.
-    search: str
-        search word.
-    is_show: bool
-        determines whether all data should be shown.
-
-    Returns
-    -------
-    object
-        returns a AgGrid object or None if our data is empty.
-    """
-    # Start the research process
-    if search or is_show:
-        results = request_search(data, search, is_show)
-        return results
-    else:
-        return pd.DataFrame()
-
-
 def load_css_table() -> None:
     """Load a css style."""
     itables.options.css = """
@@ -101,20 +74,38 @@ def load_css_table() -> None:
 
     .itables table td { 
         word-wrap: break-word;
+        min-width: 50px;
         max-width: 50px;
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 12px;
     }
     
+    .itables table td:nth-child(3){
+        min-width: 80px;
+        max-width: 80px;
+    }
+    
+    .itables table td:nth-child(4), .itables table td:nth-child(7) {
+        max-width: 300px;
+    }
+    
     .itables table th { 
         word-wrap: break-word;
-        max-width: 150px;
         font-size: 11px;
     }
     
-    .itables table th:nth-child(1), .itables table td:nth-child(1){
+    .itables table th:nth-child(1), .itables table td:nth-child(1) {
         display:none;
+    }
+    
+    a:link, a:visited {
+        color: rgb(51, 125, 255);
+    }
+    
+    .itables {
+        background: white;
+        padding: 10px;
     }
     """
 
@@ -129,9 +120,8 @@ def user_interaction() -> None:
     wm.load_css()
     select_data = "mdp"
     data = wm.load_data()[select_data]
-    search, is_show, col_filter, col_download = wm.display_search_bar(
-        select_data)
-    results = search_processing(data=data, search=search, is_show=is_show)
+    search, col_filter, col_download = wm.display_search_bar(select_data)
+    results = request_search(data, search)
     if not results.empty:
         with col_filter:
             add_filter = st.checkbox("Add filter")
