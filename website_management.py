@@ -197,7 +197,7 @@ def display_table(data_filtered: pd.DataFrame) -> None:
             data_filtered,
             classes="display nowrap cell-border",
             dom="ltpr",
-            lengthMenu=[15, 20, 25, 50, 100],
+            lengthMenu=[20, 10, 50, 100],
             style="width:100%",
             columnDefs=[
                 {
@@ -205,10 +205,10 @@ def display_table(data_filtered: pd.DataFrame) -> None:
                     "createdCell": JavascriptFunction(link_content_func()),
                 }
             ],
-            scrollY="500px",
             scrollX=True,
+            scrollY=700,
         ),
-        height=630,
+        height=850,
     )
     itables.init_notebook_mode(all_interactive=True)
 
@@ -254,7 +254,7 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
     """
     date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
     st.download_button(
-        label="Export selection to tsv",
+        label="📦 Export selection to tsv",
         data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
         file_name=f"mdverse_{date_now}.tsv",
         mime="text/tsv",

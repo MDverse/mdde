@@ -70,8 +70,9 @@ def request_search(data: pd.DataFrame, search: str) -> pd.DataFrame:
 def load_css_table() -> None:
     """Load a css style."""
     itables.options.css = """
-    .itables table {
+    .itables {
         font-family: 'sans-serif';
+        font-size: 0.8rem;
     }
     
     .itables table td { 
@@ -126,7 +127,7 @@ def user_interaction() -> None:
     results = request_search(data, search)
     if not results.empty:
         with col_filter:
-            add_filter = st.checkbox("Add filter")
+            add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
         load_css_table()
         wm.display_table(data_filtered)

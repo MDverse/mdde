@@ -19,6 +19,12 @@ dataset_agg = (datasets_df
      date_first_dataset=("date_creation", "min"),
      date_last_dataset=("date_creation", "max"),
  )
+ .rename(columns={"number_of_datasets": "Number of datasets",
+                  "date_first_dataset":"First dataset",
+                  "date_last_dataset":"Last dataset"})
 )
 dataset_agg.loc["total"] = dataset_agg.sum(numeric_only=True)
+dataset_agg.index.name = "Dataset origin"
+st.write("Amount of data available:")
 st.dataframe(dataset_agg.style.format(thousands=",", precision=0))
+
