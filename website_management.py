@@ -238,12 +238,10 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         label_search = ".gro files quick search"
     elif select_data == "mdp":
         label_search = ".mdp files quick search"
-    col_keyup, col_show, col_filter, col_download = st.columns([3, 1, 1, 1])
+    col_keyup, col_filter, col_download, _ = st.columns([3, 1, 1, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
-    with col_show:
-        is_show = st.checkbox("Show all", key=select_data)
-    return search, is_show, col_filter, col_download
+    return search, col_filter, col_download
 
 
 def display_export_button(data_filtered: pd.DataFrame) -> None:
