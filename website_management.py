@@ -229,8 +229,8 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         contains search word, a bool for checkbox and a layout of
         the site.
     """
-    st.title("MDverse")
-    placeholder = "Enter search term (for instance: Covid, POPC, Gromacs, CHARMM36)"
+    st.title("MDverse data explorer")
+    placeholder = "Enter search term. For instance: Covid, POPC, Gromacs, CHARMM36, 1402417"
     label_search = ""
     if select_data == "datasets":
         label_search = "Datasets quick search"

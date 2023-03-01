@@ -107,7 +107,7 @@ def user_interaction() -> None:
     Allows interaction between the user and our informational data from MD
     data.
     """
-    st.set_page_config(page_title="MDverse", layout="wide")
+    st.set_page_config(page_title="MDverse - datasets", layout="wide")
     wm.load_css()
     select_data = "datasets"
     data = wm.load_data()[select_data]
