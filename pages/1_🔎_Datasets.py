@@ -68,11 +68,11 @@ def user_interaction() -> None:
     search, col_filter, col_download = wm.display_search_bar(select_data)
     results = request_search(data, search)
     if not results.empty:
-        results = results.reset_index()
-        results["index"] = range(1, len(results) + 1)
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
+        data_filtered = data_filtered.reset_index()
+        data_filtered["index"] = range(1, len(data_filtered) + 1)
         st.components.v1.html(wm.display_table(data_filtered), height=850)
         with col_download:
             wm.display_export_button(data_filtered)
