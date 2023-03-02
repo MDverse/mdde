@@ -48,7 +48,7 @@ words = [word.lower().strip() for word in titles.split()]
 # Build and display the wordcloud.
 wordcloud = WordCloud(
     width=1000,
-    height=500,
+    height=400,
     background_color="white",
     stopwords=set(STOPWORDS),
     min_font_size=12,
