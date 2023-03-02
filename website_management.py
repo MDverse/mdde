@@ -174,14 +174,15 @@ def link_content_func() -> str:
     """
     return """
             function (td, cellData, rowData, row, col) {
-                if (col == 2) {
-                    td.innerHTML = "<a href="+rowData[col-2]+" target='_blank'>"+cellData+"</a>";
+                if (col == 3) {
+                    td.innerHTML = "<a href="+rowData[1]+" target='_blank'>"+cellData+"</a>";
                 }
                 td.setAttribute('title', cellData);
             }
             """
 
 
+@st.cache_resource(experimental_allow_widgets=True)
 def display_table(data_filtered: pd.DataFrame) -> None:
     """Display a table of the query data.
 
@@ -191,13 +192,12 @@ def display_table(data_filtered: pd.DataFrame) -> None:
         filtered dataframe.
     """
     st.write(f"{len(data_filtered)} elements found")
-    data_filtered = data_filtered.reset_index(drop=True)
     st.components.v1.html(
         itables.to_html_datatable(
             data_filtered,
             classes="display nowrap cell-border",
             dom="ltpr",
-            lengthMenu=[20, 10, 50, 100],
+            lengthMenu=[20, 50, 100, 250],
             style="width:100%",
             columnDefs=[
                 {
@@ -206,11 +206,11 @@ def display_table(data_filtered: pd.DataFrame) -> None:
                 }
             ],
             scrollX=True,
-            scrollY=700,
+            scrollY=650,
+            maxBytes=0,
         ),
         height=850,
     )
-    itables.init_notebook_mode(all_interactive=True)
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
@@ -230,7 +230,9 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         the site.
     """
     st.title("MDverse data explorer")
-    placeholder = "Enter search term. For instance: Covid, POPC, Gromacs, CHARMM36, 1402417"
+    placeholder = (
+        "Enter search term. For instance: Covid, POPC, Gromacs, CHARMM36, 1402417"
+    )
     label_search = ""
     if select_data == "datasets":
         label_search = "Datasets quick search"
@@ -253,8 +255,12 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
         filtered dataframe.
     """
     date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    data_filtered = data_filtered.drop("index", axis=1)
+    temp_cols = list(data_filtered.columns)
+    new_cols = temp_cols[1:] + temp_cols[0:1]
+    data_filtered = data_filtered[new_cols]
     st.download_button(
-        label="📦 Export selection to tsv",
+        label="📦 Export to tsv",
         data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
         file_name=f"mdverse_{date_now}.tsv",
         mime="text/tsv",
@@ -285,116 +291,9 @@ def update_contents(data_filtered: pd.DataFrame, select_data: str) -> None:
     st.session_state["content"] = contents
 
 
-def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
-    """Change the value of the cursor by applying a specific value to it.
-
-    Parameters
-    ----------
-    select_cursor: str
-        Type of increment or decrement for the cursor.
-        Values: ["backward", "previous", "next", "forward"]
-    select_data: str
-        Type of data to search for.
-        Values: ["datasets", "gro", "mdp"]
-    size_selected: int
-        total number of selected rows.
-    """
-    if select_cursor == "backward":
-        st.session_state["cursor" + select_data] = 0
-    elif select_cursor == "previous":
-        st.session_state["cursor" + select_data] -= 1
-    elif select_cursor == "next":
-        st.session_state["cursor" + select_data] += 1
-    else:
-        st.session_state["cursor" + select_data] = size_selected - 1
-
-
-def fix_cursor(size_selected: int, select_data: str) -> None:
-    """Correct the cursor position according to the number of selected rows.
-
-    Parameters
-    ----------
-    size_selected: int
-        total number of selected rows.
-    select_data: str
-        Type of data to search for.
-        Values: ["datasets", "gro","mdp"]
-    """
-    while st.session_state["cursor" + select_data] >= size_selected:
-        st.session_state["cursor" + select_data] -= 1
-
-
-def display_buttons_details(
-    columns: list, select_data: str, size_selected: int
-) -> None:
-    """Display the buttons in a structured way.
-
-    Parameters
-    ----------
-    columns: list
-        List used for the layout of the sidebar.
-        Values: ["backward", "previous", "next", "forward"]
-    select_data: str
-        Type of data to search for.
-        Values: ["datasets", "gro", "mdp"]
-    size_selected: int
-        total number of selected rows.
-    """
-    cursor = st.session_state["cursor" + select_data]
-    disabled_previous = False if cursor - 1 >= 0 else True
-    disabled_next = False if cursor + 1 < size_selected else True
-    with columns[2]:
-        st.button(
-            "«",
-            on_click=update_cursor,
-            args=(
-                "backward",
-                select_data,
-                size_selected,
-            ),
-            key="backward",
-            disabled=disabled_previous,
-            use_container_width=True,
-        )
-        with columns[3]:
-            st.button(
-                "⬅",
-                on_click=update_cursor,
-                args=(
-                    "previous",
-                    select_data,
-                    size_selected,
-                ),
-                key="previous",
-                disabled=disabled_previous,
-                use_container_width=True,
-            )
-        with columns[4]:
-            st.button(
-                "➡",
-                on_click=update_cursor,
-                args=(
-                    "next",
-                    select_data,
-                    size_selected,
-                ),
-                key="next",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
-        with columns[5]:
-            st.button(
-                "»",
-                on_click=update_cursor,
-                args=(
-                    "forward",
-                    select_data,
-                    size_selected,
-                ),
-                key="forward",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
+def display_slider(select_data: str, size_selected: int) -> None:
+    cursor = st.sidebar.slider("Selected row:", 1, size_selected, 1)
+    st.session_state["cursor" + select_data] = cursor - 1
 
 
 def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
@@ -416,14 +315,10 @@ def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
         st.session_state["content"] = ""
 
     size_selected = len(data_filtered)
-    if size_selected != 0:
-        fix_cursor(size_selected, select_data)
+    if size_selected:
+        if size_selected > 1:
+            display_slider(select_data, size_selected)
         update_contents(data_filtered, select_data)
-        cursor = st.session_state["cursor" + select_data]
-        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-        with columns[0]:
-            st.write(f"{cursor + 1} / {size_selected} selected")
-        display_buttons_details(columns, select_data, size_selected)
         st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0

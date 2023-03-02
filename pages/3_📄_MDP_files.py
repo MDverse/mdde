@@ -82,12 +82,12 @@ def load_css_table() -> None:
         font-size: 12px;
     }
     
-    .itables table td:nth-child(3){
+    .itables table td:nth-child(4){
         min-width: 80px;
         max-width: 80px;
     }
     
-    .itables table td:nth-child(4), .itables table td:nth-child(7) {
+    .itables table td:nth-child(5), .itables table td:nth-child(8) {
         max-width: 300px;
     }
     
@@ -96,7 +96,7 @@ def load_css_table() -> None:
         font-size: 11px;
     }
     
-    .itables table th:nth-child(1), .itables table td:nth-child(1) {
+    .itables table th:nth-child(2), .itables table td:nth-child(2) {
         display:none;
     }
     
@@ -124,6 +124,8 @@ def user_interaction() -> None:
     search, col_filter, col_download = wm.display_search_bar(select_data)
     results = request_search(data, search)
     if not results.empty:
+        results = results.reset_index()
+        results["index"] = range(1, len(results) + 1)
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
