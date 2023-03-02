@@ -185,6 +185,9 @@ def link_content_func() -> str:
 def display_table(data_filtered: pd.DataFrame) -> str:
     """Display a table of the query data.
 
+    To get more information about the itables library, please visit:
+    https://mwouts.github.io/itables/advanced_parameters.html
+
     Parameters
     ----------
     data_filtered: pd.DataFrame
@@ -198,25 +201,32 @@ def display_table(data_filtered: pd.DataFrame) -> str:
     st.write(f"{len(data_filtered)} elements found")
     table = itables.to_html_datatable(
         data_filtered,
+        # Style display of the table
         classes="display nowrap cell-border",
+        # Element to display
         dom="ltpr",
+        # Number of elements to display
         lengthMenu=[20, 50, 100, 250],
         style="width:100%",
+        # Apply Javascript function to all cells
         columnDefs=[
             {
                 "targets": "_all",
                 "createdCell": JavascriptFunction(link_content_func()),
             }
         ],
+        # Enable scrolling
         scrollX=True,
+        # Set a vertical scroll
         scrollY=650,
+        # Desactivate downsampling
         maxBytes=0,
     )
     return table
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
-    """Configure the display and the parameters of the website.
+    """Configure the display of the search bar.
 
     Parameters
     ----------
@@ -244,13 +254,12 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         label_search = ".mdp files quick search"
     col_keyup, col_filter, col_download, _ = st.columns([4, 1.2, 1, 1])
     with col_keyup:
-        # search = st_keyup(label_search, placeholder=placeholder)
         search = st.text_input(label_search, placeholder=placeholder)
     return search, col_filter, col_download
 
 
 def display_export_button(data_filtered: pd.DataFrame) -> None:
-    """Add a download button to export the selected data from the bokeh table.
+    """Add a download button to export the data from the table.
 
     Parameters
     ----------
@@ -259,6 +268,7 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
     """
     date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
     data_filtered = data_filtered.drop("index", axis=1)
+    # Change URL column to the last column
     temp_cols = list(data_filtered.columns)
     new_cols = temp_cols[1:] + temp_cols[0:1]
     data_filtered = data_filtered[new_cols]
@@ -295,6 +305,16 @@ def update_contents(data_filtered: pd.DataFrame, select_data: str) -> None:
 
 
 def display_slider(select_data: str, size_selected: int) -> None:
+    """Display a sidebar for the information to be displayed.
+
+    Parameters
+    ----------
+    select_data: str
+        Type of data to search for.
+        Values: ["datasets", "gro","mdp"]
+    size_selected: int
+        number of rows selected.
+    """
     cursor = st.sidebar.slider("Selected row:", 1, size_selected, 1)
     st.session_state["cursor" + select_data] = cursor - 1
 
@@ -342,18 +362,18 @@ def load_css() -> None:
                 position: absolute;
                 top: 33px;
             }
-            
+
             /* Responsive display */
-            @media (max-width:640px) { 
+            @media (max-width:640px) {
                 .stCheckbox {
-                    position: static;;    
+                    position: static;
                 }
-                
+
                 .stDownloadButton {
                     position: static;
                 }
             }
-            
+
             /* Maximize thedusplay of the data explorer search */
             .block-container:first-of-type {
                 padding-top: 20px;
@@ -372,15 +392,15 @@ def load_css() -> None:
                 background: white;
                 padding: 10px;
             }
-            
+
             /* Specific column titles */
-            .itables table th { 
+            .itables table th {
                 word-wrap: break-word;
                 font-size: 11px;
             }
 
             /* Cells specific */
-            .itables table td { 
+            .itables table td {
                 word-wrap: break-word;
                 min-width: 50px;
                 max-width: 50px;
