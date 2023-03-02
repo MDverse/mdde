@@ -182,7 +182,7 @@ def link_content_func() -> str:
 
 
 @st.cache_data
-def display_table(data_filtered: pd.DataFrame) -> object:
+def display_table(data_filtered: pd.DataFrame) -> str:
     """Display a table of the query data.
 
     Parameters
@@ -193,7 +193,7 @@ def display_table(data_filtered: pd.DataFrame) -> object:
     Returns
     -------
     str
-        return a HTML object contains all information about the datatable.
+        a HTML string containing the datatable.
     """
     st.write(f"{len(data_filtered)} elements found")
     table = itables.to_html_datatable(

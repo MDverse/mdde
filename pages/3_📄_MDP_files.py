@@ -3,7 +3,6 @@
 import streamlit as st
 import pandas as pd
 import website_management as wm
-import itables
 
 
 @st.cache_data
@@ -79,7 +78,7 @@ def user_interaction() -> None:
     results = request_search(data, search)
     if not results.empty:
         with col_filter:
-            add_filter = st.checkbox("🔍 Add filter")
+            add_filter = st.checkbox("🔍 Add filter", key="filter" + select_data)
         data_filtered = wm.filter_dataframe(results, add_filter)
         data_filtered = data_filtered.reset_index()
         data_filtered["index"] = range(1, len(data_filtered) + 1)
