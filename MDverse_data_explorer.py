@@ -1,8 +1,11 @@
 """Streamlit web app for exploring molecular dynamics (MD) data."""
 
+import matplotlib.pyplot as plt
 import streamlit as st
+from wordcloud import WordCloud, STOPWORDS
 
 import website_management as wm
+
 
 st.set_page_config(page_title="MDverse", page_icon="🔎", layout="wide")
 
@@ -33,3 +36,21 @@ st.write(f"{len(gro_df)} Gromacs GRO files")
 
 mdp_df = wm.load_data()["mdp"]
 st.write(f"{len(mdp_df)} Gromacs MDP files")
+
+
+# Build word list for the wordcloud.
+titles = " ".join(datasets_df["title"].values)
+titles = titles.replace(",", " ").replace(".", " ")
+words = [word.lower().strip() for word in titles.split()]
+#Build the wordcloud.
+wordcloud = WordCloud(
+    width=1000, height=600,
+    background_color="white",
+    stopwords=set(STOPWORDS),
+    min_font_size=12
+).generate(" ".join(words))
+# Plot the WordCloud image.
+fig, ax = plt.subplots(facecolor=None)
+ax.imshow(wordcloud)
+ax.axis("off")
+st.pyplot(fig)
