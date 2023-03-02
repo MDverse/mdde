@@ -67,52 +67,6 @@ def request_search(data: pd.DataFrame, search: str) -> pd.DataFrame:
     return results
 
 
-def load_css_table() -> None:
-    """Load a css style."""
-    itables.options.css = """
-    .itables {
-        font-family: 'sans-serif';
-        font-size: 0.8rem;
-    }
-    
-    .itables table td { 
-        word-wrap: break-word;
-        min-width: 50px;
-        max-width: 50px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 12px;
-    }
-    
-    .itables table td:nth-child(4) {
-        min-width: 80px;
-        max-width: 80px;
-    }
-    
-    .itables table td:nth-child(5), .itables table td:nth-child(8) {
-        max-width: 300px;
-    }
-    
-    .itables table th { 
-        word-wrap: break-word;
-        font-size: 11px;
-    }
-    
-    .itables table th:nth-child(2), .itables table td:nth-child(2){
-        display:none;
-    }
-    
-    a:link, a:visited {
-        color: rgb(51, 125, 255);
-    }
-    
-    .itables {
-        background: white;
-        padding: 10px;
-    }
-    """
-
-
 def user_interaction() -> None:
     """Control the streamlit application.
 
@@ -131,7 +85,6 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        load_css_table()
         wm.display_table(data_filtered)
         with col_download:
             wm.display_export_button(data_filtered)

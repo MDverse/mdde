@@ -329,6 +329,7 @@ def load_css() -> None:
     st.markdown(
         """
         <style>
+            /* Centre the add filter checkbox and the download button */
             .stCheckbox {
                 position: absolute;
                 top: 40px;
@@ -339,6 +340,7 @@ def load_css() -> None:
                 top: 33px;
             }
             
+            /* Responsive display */
             @media (max-width:640px) { 
                 .stCheckbox {
                     position: static;;    
@@ -348,11 +350,8 @@ def load_css() -> None:
                     position: static;
                 }
             }
-
-            .stDownloadButton > button {
-                width: 100%;
-            }
-
+            
+            /* Maximize thedusplay of the data explorer search */
             .block-container:first-of-type {
                 padding-top: 20px;
                 padding-left: 20px;
@@ -362,3 +361,49 @@ def load_css() -> None:
     """,
         unsafe_allow_html=True,
     )
+    itables.options.css = """
+            /* Change the display of the table */
+            .itables {
+                font-family: 'sans-serif';
+                font-size: 0.8rem;
+                background: white;
+                padding: 10px;
+            }
+            
+            /* Specific column titles */
+            .itables table th { 
+                word-wrap: break-word;
+                font-size: 11px;
+            }
+
+            /* Cells specific */
+            .itables table td { 
+                word-wrap: break-word;
+                min-width: 50px;
+                max-width: 50px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 12px;
+            }
+
+            /* Set the width of the id column */
+            .itables table td:nth-child(4) {
+                min-width: 80px;
+                max-width: 80px;
+            }
+
+            /* Set the width of the title and description columns */
+            .itables table td:nth-child(5), .itables table td:nth-child(8) {
+                max-width: 300px;
+            }
+
+            /* Hide the URL column */
+            .itables table th:nth-child(2), .itables table td:nth-child(2){
+                display:none;
+            }
+
+            /* Apply colour to links */
+            a:link, a:visited {
+                color: rgb(51, 125, 255);
+            }
+    """

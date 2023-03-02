@@ -83,7 +83,7 @@ def load_css_table() -> None:
     
     .itables table th { 
         word-wrap: break-word;
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .itables table th:nth-child(2), .itables table td:nth-child(2){
@@ -119,7 +119,6 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        load_css_table()
         wm.display_table(data_filtered)
         with col_download:
             wm.display_export_button(data_filtered)
