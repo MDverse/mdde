@@ -7,7 +7,6 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
-from st_keyup import st_keyup
 from datetime import datetime
 import itables
 from itables import JavascriptFunction
@@ -174,47 +173,60 @@ def link_content_func() -> str:
     """
     return """
             function (td, cellData, rowData, row, col) {
-                if (col == 2) {
-                    td.innerHTML = "<a href="+rowData[col-2]+" target='_blank'>"+cellData+"</a>";
+                if (col == 3) {
+                    td.innerHTML = "<a href="+rowData[1]+" target='_blank'>"+cellData+"</a>";
                 }
                 td.setAttribute('title', cellData);
             }
             """
 
 
-def display_table(data_filtered: pd.DataFrame) -> None:
+@st.cache_data
+def display_table(data_filtered: pd.DataFrame) -> str:
     """Display a table of the query data.
+
+    To get more information about the itables library, please visit:
+    https://mwouts.github.io/itables/advanced_parameters.html
 
     Parameters
     ----------
     data_filtered: pd.DataFrame
         filtered dataframe.
+
+    Returns
+    -------
+    str
+        a HTML string containing the datatable.
     """
     st.write(f"{len(data_filtered)} elements found")
-    data_filtered = data_filtered.reset_index(drop=True)
-    st.components.v1.html(
-        itables.to_html_datatable(
-            data_filtered,
-            classes="display nowrap cell-border",
-            dom="ltpr",
-            lengthMenu=[20, 10, 50, 100],
-            style="width:100%",
-            columnDefs=[
-                {
-                    "targets": "_all",
-                    "createdCell": JavascriptFunction(link_content_func()),
-                }
-            ],
-            scrollX=True,
-            scrollY=700,
-        ),
-        height=850,
+    table = itables.to_html_datatable(
+        data_filtered,
+        # Style display of the table
+        classes="display nowrap cell-border",
+        # Element to display
+        dom="ltpr",
+        # Number of elements to display
+        lengthMenu=[20, 50, 100, 250],
+        style="width:100%",
+        # Apply Javascript function to all cells
+        columnDefs=[
+            {
+                "targets": "_all",
+                "createdCell": JavascriptFunction(link_content_func()),
+            }
+        ],
+        # Enable scrolling
+        scrollX=True,
+        # Set a vertical scroll
+        scrollY=650,
+        # Desactivate downsampling
+        maxBytes=0,
     )
-    itables.init_notebook_mode(all_interactive=True)
+    return table
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
-    """Configure the display and the parameters of the website.
+    """Configure the display of the search bar.
 
     Parameters
     ----------
@@ -230,7 +242,9 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         the site.
     """
     st.title("MDverse data explorer")
-    placeholder = "Enter search term. For instance: Covid, POPC, Gromacs, CHARMM36, 1402417"
+    placeholder = (
+        "Enter search term. For instance: Covid, POPC, Gromacs, CHARMM36, 1402417"
+    )
     label_search = ""
     if select_data == "datasets":
         label_search = "Datasets quick search"
@@ -238,14 +252,14 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         label_search = ".gro files quick search"
     elif select_data == "mdp":
         label_search = ".mdp files quick search"
-    col_keyup, col_filter, col_download, _ = st.columns([3, 1, 1, 1])
+    col_keyup, col_filter, col_download, _ = st.columns([4, 1.2, 1, 1])
     with col_keyup:
-        search = st_keyup(label_search, placeholder=placeholder)
+        search = st.text_input(label_search, placeholder=placeholder)
     return search, col_filter, col_download
 
 
 def display_export_button(data_filtered: pd.DataFrame) -> None:
-    """Add a download button to export the selected data from the bokeh table.
+    """Add a download button to export the data from the table.
 
     Parameters
     ----------
@@ -253,8 +267,13 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
         filtered dataframe.
     """
     date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    data_filtered = data_filtered.drop("index", axis=1)
+    # Change URL column to the last column
+    temp_cols = list(data_filtered.columns)
+    new_cols = temp_cols[1:] + temp_cols[0:1]
+    data_filtered = data_filtered[new_cols]
     st.download_button(
-        label="📦 Export selection to tsv",
+        label="📦 Export to tsv",
         data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
         file_name=f"mdverse_{date_now}.tsv",
         mime="text/tsv",
@@ -285,116 +304,19 @@ def update_contents(data_filtered: pd.DataFrame, select_data: str) -> None:
     st.session_state["content"] = contents
 
 
-def update_cursor(select_cursor: str, select_data: str, size_selected: int) -> None:
-    """Change the value of the cursor by applying a specific value to it.
+def display_slider(select_data: str, size_selected: int) -> None:
+    """Display a sidebar for the information to be displayed.
 
     Parameters
     ----------
-    select_cursor: str
-        Type of increment or decrement for the cursor.
-        Values: ["backward", "previous", "next", "forward"]
-    select_data: str
-        Type of data to search for.
-        Values: ["datasets", "gro", "mdp"]
-    size_selected: int
-        total number of selected rows.
-    """
-    if select_cursor == "backward":
-        st.session_state["cursor" + select_data] = 0
-    elif select_cursor == "previous":
-        st.session_state["cursor" + select_data] -= 1
-    elif select_cursor == "next":
-        st.session_state["cursor" + select_data] += 1
-    else:
-        st.session_state["cursor" + select_data] = size_selected - 1
-
-
-def fix_cursor(size_selected: int, select_data: str) -> None:
-    """Correct the cursor position according to the number of selected rows.
-
-    Parameters
-    ----------
-    size_selected: int
-        total number of selected rows.
     select_data: str
         Type of data to search for.
         Values: ["datasets", "gro","mdp"]
-    """
-    while st.session_state["cursor" + select_data] >= size_selected:
-        st.session_state["cursor" + select_data] -= 1
-
-
-def display_buttons_details(
-    columns: list, select_data: str, size_selected: int
-) -> None:
-    """Display the buttons in a structured way.
-
-    Parameters
-    ----------
-    columns: list
-        List used for the layout of the sidebar.
-        Values: ["backward", "previous", "next", "forward"]
-    select_data: str
-        Type of data to search for.
-        Values: ["datasets", "gro", "mdp"]
     size_selected: int
-        total number of selected rows.
+        number of rows selected.
     """
-    cursor = st.session_state["cursor" + select_data]
-    disabled_previous = False if cursor - 1 >= 0 else True
-    disabled_next = False if cursor + 1 < size_selected else True
-    with columns[2]:
-        st.button(
-            "«",
-            on_click=update_cursor,
-            args=(
-                "backward",
-                select_data,
-                size_selected,
-            ),
-            key="backward",
-            disabled=disabled_previous,
-            use_container_width=True,
-        )
-        with columns[3]:
-            st.button(
-                "⬅",
-                on_click=update_cursor,
-                args=(
-                    "previous",
-                    select_data,
-                    size_selected,
-                ),
-                key="previous",
-                disabled=disabled_previous,
-                use_container_width=True,
-            )
-        with columns[4]:
-            st.button(
-                "➡",
-                on_click=update_cursor,
-                args=(
-                    "next",
-                    select_data,
-                    size_selected,
-                ),
-                key="next",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
-        with columns[5]:
-            st.button(
-                "»",
-                on_click=update_cursor,
-                args=(
-                    "forward",
-                    select_data,
-                    size_selected,
-                ),
-                key="forward",
-                disabled=disabled_next,
-                use_container_width=True,
-            )
+    cursor = st.sidebar.slider("Selected row:", 1, size_selected, 1)
+    st.session_state["cursor" + select_data] = cursor - 1
 
 
 def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
@@ -416,14 +338,10 @@ def display_details(data_filtered: pd.DataFrame, select_data: str) -> None:
         st.session_state["content"] = ""
 
     size_selected = len(data_filtered)
-    if size_selected != 0:
-        fix_cursor(size_selected, select_data)
+    if size_selected:
+        if size_selected > 1:
+            display_slider(select_data, size_selected)
         update_contents(data_filtered, select_data)
-        cursor = st.session_state["cursor" + select_data]
-        columns = st.sidebar.columns([4, 1, 2, 2, 2, 2])
-        with columns[0]:
-            st.write(f"{cursor + 1} / {size_selected} selected")
-        display_buttons_details(columns, select_data, size_selected)
         st.sidebar.markdown(st.session_state["content"], unsafe_allow_html=True)
     else:
         st.session_state["cursor" + select_data] = 0
@@ -434,6 +352,7 @@ def load_css() -> None:
     st.markdown(
         """
         <style>
+            /* Centre the add filter checkbox and the download button */
             .stCheckbox {
                 position: absolute;
                 top: 40px;
@@ -444,10 +363,18 @@ def load_css() -> None:
                 top: 33px;
             }
 
-            .stDownloadButton > button {
-                width: 100%;
+            /* Responsive display */
+            @media (max-width:640px) {
+                .stCheckbox {
+                    position: static;
+                }
+
+                .stDownloadButton {
+                    position: static;
+                }
             }
 
+            /* Maximize thedusplay of the data explorer search */
             .block-container:first-of-type {
                 padding-top: 20px;
                 padding-left: 20px;
@@ -457,3 +384,49 @@ def load_css() -> None:
     """,
         unsafe_allow_html=True,
     )
+    itables.options.css = """
+            /* Change the display of the table */
+            .itables {
+                font-family: 'sans-serif';
+                font-size: 0.8rem;
+                background: white;
+                padding: 10px;
+            }
+
+            /* Specific column titles */
+            .itables table th {
+                word-wrap: break-word;
+                font-size: 11px;
+            }
+
+            /* Cells specific */
+            .itables table td {
+                word-wrap: break-word;
+                min-width: 50px;
+                max-width: 50px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 12px;
+            }
+
+            /* Set the width of the id column */
+            .itables table td:nth-child(4) {
+                min-width: 80px;
+                max-width: 80px;
+            }
+
+            /* Set the width of the title and description columns */
+            .itables table td:nth-child(5), .itables table td:nth-child(8) {
+                max-width: 300px;
+            }
+
+            /* Hide the URL column */
+            .itables table th:nth-child(2), .itables table td:nth-child(2){
+                display:none;
+            }
+
+            /* Apply colour to links */
+            a:link, a:visited {
+                color: rgb(51, 125, 255);
+            }
+    """
