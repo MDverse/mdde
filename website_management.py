@@ -7,7 +7,6 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
-from st_keyup import st_keyup
 from datetime import datetime
 import itables
 from itables import JavascriptFunction
@@ -182,35 +181,38 @@ def link_content_func() -> str:
             """
 
 
-@st.cache_resource(experimental_allow_widgets=True)
-def display_table(data_filtered: pd.DataFrame) -> None:
+@st.cache_data
+def display_table(data_filtered: pd.DataFrame) -> object:
     """Display a table of the query data.
 
     Parameters
     ----------
     data_filtered: pd.DataFrame
         filtered dataframe.
+
+    Returns
+    -------
+    str
+        return a HTML object contains all information about the datatable.
     """
     st.write(f"{len(data_filtered)} elements found")
-    st.components.v1.html(
-        itables.to_html_datatable(
-            data_filtered,
-            classes="display nowrap cell-border",
-            dom="ltpr",
-            lengthMenu=[20, 50, 100, 250],
-            style="width:100%",
-            columnDefs=[
-                {
-                    "targets": "_all",
-                    "createdCell": JavascriptFunction(link_content_func()),
-                }
-            ],
-            scrollX=True,
-            scrollY=650,
-            maxBytes=0,
-        ),
-        height=850,
+    table = itables.to_html_datatable(
+        data_filtered,
+        classes="display nowrap cell-border",
+        dom="ltpr",
+        lengthMenu=[20, 50, 100, 250],
+        style="width:100%",
+        columnDefs=[
+            {
+                "targets": "_all",
+                "createdCell": JavascriptFunction(link_content_func()),
+            }
+        ],
+        scrollX=True,
+        scrollY=650,
+        maxBytes=0,
     )
+    return table
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:
@@ -242,7 +244,8 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         label_search = ".mdp files quick search"
     col_keyup, col_filter, col_download, _ = st.columns([4, 1.2, 1, 1])
     with col_keyup:
-        search = st_keyup(label_search, placeholder=placeholder)
+        # search = st_keyup(label_search, placeholder=placeholder)
+        search = st.text_input(label_search, placeholder=placeholder)
     return search, col_filter, col_download
 
 

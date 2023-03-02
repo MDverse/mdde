@@ -83,7 +83,7 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter")
         data_filtered = wm.filter_dataframe(results, add_filter)
-        wm.display_table(data_filtered)
+        st.components.v1.html(wm.display_table(data_filtered), height=850)
         with col_download:
             wm.display_export_button(data_filtered)
         wm.display_details(data_filtered, select_data)
