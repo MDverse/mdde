@@ -273,7 +273,7 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
     new_cols = temp_cols[1:] + temp_cols[0:1]
     data_filtered = data_filtered[new_cols]
     st.download_button(
-        label="📦 Export to tsv",
+        label="🛒 Export to tsv",
         data=data_filtered.to_csv(sep="\t", index=False).encode("utf-8"),
         file_name=f"mdverse_{date_now}.tsv",
         mime="text/tsv",
