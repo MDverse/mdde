@@ -240,7 +240,7 @@ def display_search_bar(select_data: str = "datasets") -> tuple:
         label_search = ".gro files quick search"
     elif select_data == "mdp":
         label_search = ".mdp files quick search"
-    col_keyup, col_filter, col_download, _ = st.columns([3, 1, 1, 1])
+    col_keyup, col_filter, col_download, _ = st.columns([4, 2, 2, 1])
     with col_keyup:
         search = st_keyup(label_search, placeholder=placeholder)
     return search, col_filter, col_download
@@ -337,6 +337,16 @@ def load_css() -> None:
             .stDownloadButton {
                 position: absolute;
                 top: 33px;
+            }
+            
+            @media (max-width:640px) { 
+                .stCheckbox {
+                    position: static;;    
+                }
+                
+                .stDownloadButton {
+                    position: static;
+                }
             }
 
             .stDownloadButton > button {
