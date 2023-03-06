@@ -46,11 +46,11 @@ conda deactivate
 
 ## Get data
 
-Data files should be located in the `data` directory and comply with the [data model](https://github.com/MDverse/mdws/blob/main/docs/data_model.md).
+Data files are directly downloaded from Zenodo.
 
 
 ## Run the web application
 
 ```bash
-streamlit run app.py
+streamlit run MDverse_data_explorer.py
 ```
