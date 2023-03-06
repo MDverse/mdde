@@ -110,7 +110,7 @@ def filter_dataframe(df: pd.DataFrame, add_filter) -> pd.DataFrame:
     with modification_container:
         to_filter_columns = st.multiselect(
             label="Filter dataframe on",
-            options=df.columns[:-1].drop(["URL", "ID"], errors="ignore"),
+            options=df.columns.drop(["URL", "ID"], errors="ignore"),
             label_visibility="collapsed",
         )
         for column in to_filter_columns:
