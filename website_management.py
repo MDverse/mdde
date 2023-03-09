@@ -23,10 +23,10 @@ def load_data() -> dict:
     """
     dfs = {}
     datasets = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1169962/files/datasets.parquet"
+        "https://sandbox.zenodo.org/record/1171298/files/datasets.parquet"
     )
     gro = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1169962/files/gromacs_gro_files.parquet"
+        "https://sandbox.zenodo.org/record/1171298/files/gromacs_gro_files.parquet"
     )
     gro_data = pd.merge(
         gro,
@@ -36,7 +36,7 @@ def load_data() -> dict:
         validate="many_to_one",
     )
     mdp = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1169962/files/gromacs_mdp_files.parquet"
+        "https://sandbox.zenodo.org/record/1171298/files/gromacs_mdp_files.parquet"
     )
     mdp_data = pd.merge(
         mdp,
