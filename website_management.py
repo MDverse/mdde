@@ -21,12 +21,15 @@ def load_data() -> dict:
     dict
         returns a dict containing the pd.DataFrame objects of our datasets.
     """
+    # DATA_URL needs to be the URL of the last version of the data.
+    # I cannot be the identifier provided by the master DOI.
+    DATA_URL = "https://zenodo.org/record/7856547"
     dfs = {}
     datasets = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1171298/files/datasets.parquet"
+        f"{DATA_URL}/files/datasets.parquet"
     )
     gro = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1171298/files/gromacs_gro_files.parquet"
+        f"{DATA_URL}/files/gromacs_gro_files.parquet"
     )
     gro_data = pd.merge(
         gro,
@@ -36,7 +39,7 @@ def load_data() -> dict:
         validate="many_to_one",
     )
     mdp = pd.read_parquet(
-        "https://sandbox.zenodo.org/record/1171298/files/gromacs_mdp_files.parquet"
+        f"{DATA_URL}/files/gromacs_mdp_files.parquet"
     )
     mdp_data = pd.merge(
         mdp,

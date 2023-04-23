@@ -1,4 +1,4 @@
-# Molecular dynamics data explorer
+# MDverse data explorer
 
 ## Setup your environment
 
