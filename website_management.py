@@ -23,7 +23,7 @@ def load_data() -> dict:
     """
     # DATA_URL needs to be the URL of the last version of the data.
     # I cannot be the identifier provided by the master DOI.
-    DATA_URL = "https://zenodo.org/record/7856547"
+    DATA_URL = "https://zenodo.org/record/7856806"
     dfs = {}
     datasets = pd.read_parquet(
         f"{DATA_URL}/files/datasets.parquet"
