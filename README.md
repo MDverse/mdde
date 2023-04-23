@@ -48,7 +48,7 @@ conda deactivate
 
 ## Get data
 
-Data files are directly downloaded from Zenodo.
+Data files are directly downloaded from [Zenodo](https://doi.org/10.5281/zenodo.7856523).
 
 
 ## Run the web application
