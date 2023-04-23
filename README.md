@@ -1,5 +1,7 @@
 # MDverse data explorer
 
+Live app available at <https://mdverse.streamlit.app/>
+
 ## Setup your environment
 
 Clone the repository:
