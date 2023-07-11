@@ -25,12 +25,8 @@ def load_data() -> dict:
     # I cannot be the identifier provided by the master DOI.
     DATA_URL = "https://zenodo.org/record/7856806"
     dfs = {}
-    datasets = pd.read_parquet(
-        f"{DATA_URL}/files/datasets.parquet"
-    )
-    gro = pd.read_parquet(
-        f"{DATA_URL}/files/gromacs_gro_files.parquet"
-    )
+    datasets = pd.read_parquet(f"{DATA_URL}/files/datasets.parquet")
+    gro = pd.read_parquet(f"{DATA_URL}/files/gromacs_gro_files.parquet")
     gro_data = pd.merge(
         gro,
         datasets,
@@ -38,9 +34,7 @@ def load_data() -> dict:
         on=["dataset_id", "dataset_origin"],
         validate="many_to_one",
     )
-    mdp = pd.read_parquet(
-        f"{DATA_URL}/files/gromacs_mdp_files.parquet"
-    )
+    mdp = pd.read_parquet(f"{DATA_URL}/files/gromacs_mdp_files.parquet")
     mdp_data = pd.merge(
         mdp,
         datasets,
@@ -270,7 +264,7 @@ def display_export_button(data_filtered: pd.DataFrame) -> None:
         filtered dataframe.
     """
     date_now = f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
-    data_filtered = data_filtered.drop("index", axis=1)
+    # data_filtered = data_filtered.drop("index", axis=1)
     # Change URL column to the last column
     temp_cols = list(data_filtered.columns)
     new_cols = temp_cols[1:] + temp_cols[0:1]
