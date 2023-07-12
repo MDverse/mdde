@@ -193,6 +193,7 @@ def display_table(data_filtered: pd.DataFrame) -> str:
     pd.DataFrame
         dataframe with selected rows.
     """
+    data_filtered.reset_index(drop=True, inplace=True)
     # Pagination
     column_number, column_size, _ = st.columns([1, 1, 10])
     with column_number:
@@ -218,6 +219,8 @@ def display_table(data_filtered: pd.DataFrame) -> str:
         disabled=True,
     )
     column_config = {column: config for column in data_filtered.columns if column != ""}
+    column_config["URL"] = st.column_config.LinkColumn("URL")
+
     # Display the table
     st.data_editor(
         data_filtered,
