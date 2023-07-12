@@ -10,6 +10,7 @@ from pandas.api.types import (
 from datetime import datetime
 import itables
 from itables import JavascriptFunction
+from math import ceil
 
 
 @st.cache_data
@@ -178,48 +179,65 @@ def link_content_func() -> str:
             """
 
 
-@st.cache_data
 def display_table(data_filtered: pd.DataFrame) -> str:
-    """Display a table of the query data.
-
-    To get more information about the itables library, please visit:
-    https://mwouts.github.io/itables/advanced_parameters.html
+    """
+    Display a table with pagination and selection.
 
     Parameters
     ----------
-    data_filtered: pd.DataFrame
-        filtered dataframe.
+    data_filtered : pd.DataFrame
+        dataframe to display.
 
     Returns
     -------
-    str
-        a HTML string containing the datatable.
+    pd.DataFrame
+        dataframe with selected rows.
     """
-    st.write(f"{len(data_filtered)} elements found")
-    table = itables.to_html_datatable(
-        data_filtered,
-        # Style display of the table
-        classes="display nowrap cell-border",
-        # Element to display
-        dom="ltpr",
-        # Number of elements to display
-        lengthMenu=[20, 50, 100, 250],
-        style="width:100%",
-        # Apply Javascript function to all cells
-        columnDefs=[
-            {
-                "targets": "_all",
-                "createdCell": JavascriptFunction(link_content_func()),
-            }
-        ],
-        # Enable scrolling
-        scrollX=True,
-        # Set a vertical scroll
-        scrollY=650,
-        # Desactivate downsampling
-        maxBytes=0,
+    # Pagination
+    column_number, column_size, _ = st.columns([1, 1, 10])
+    with column_number:
+        page_size = st.selectbox(
+            label="Page size",
+            options=[10, 25, 50, 100],
+        )
+    with column_size:
+        page_number = st.number_input(
+            label="Page number",
+            min_value=1,
+            max_value=ceil(len(data_filtered) / page_size),
+            step=1,
+        )
+    current_start = (page_number - 1) * page_size
+    current_end = page_number * page_size
+    data_filtered = data_filtered[current_start:current_end]
+    # Selection and display of the data in a table
+    selection = [False] * len(data_filtered)
+    data_filtered.insert(0, "", selection)
+    # Configure the display of columns
+    config = st.column_config.Column(
+        disabled=True,
     )
-    return table
+    column_config = {column: config for column in data_filtered.columns if column != ""}
+    # Display the table
+    st.data_editor(
+        data_filtered,
+        height=35 * page_size,
+        width=1200,
+        key="data_editor",
+        hide_index=True,
+        num_rows="fixed",
+        column_config=column_config,
+    )
+    # Select rows checked by the user
+    edited_rows = st.session_state["data_editor"].get("edited_rows")
+    selected = []
+    for key, value in edited_rows.items():
+        if value[""] == True:
+            selected.append(key + current_start)
+    # Update the dataframe
+    data_filtered = data_filtered.drop(columns=[""])
+    data_filtered = data_filtered.loc[selected]
+    return data_filtered
 
 
 def display_search_bar(select_data: str = "datasets") -> tuple:

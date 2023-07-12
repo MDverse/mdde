@@ -70,36 +70,10 @@ def user_interaction() -> None:
         with col_filter:
             add_filter = st.checkbox("🔍 Add filter", key="filter" + select_data)
         data_filtered = wm.filter_dataframe(results, add_filter)
-
-        selection = [False] * len(data_filtered)
-        data_filtered.insert(0, "Selection", selection)
-        config = st.column_config.Column(
-            disabled=True,
-        )
-        column_config = {
-            column: config for column in data_filtered.columns if column != "Selection"
-        }
-        st.data_editor(
-            data_filtered,
-            height=850,
-            width=1200,
-            key="data_editor",
-            hide_index=True,
-            num_rows="fixed",
-            column_config=column_config,
-        )
-
-        edited_rows = st.session_state["data_editor"].get("edited_rows")
-        selected = []
-        for key, value in edited_rows.items():
-            if value["Selection"] == True:
-                selected.append(key)
-
-        st.sidebar.write("Selected datasets:", len(selected), "\n", selected)
-
+        data_selected = wm.display_table(data_filtered)
         with col_download:
-            wm.display_export_button(data_filtered)
-        wm.display_details(data_filtered, select_data)
+            wm.display_export_button(data_selected)
+        wm.display_details(data_selected, select_data)
     elif search != "":
         st.write("No result found.")
 
