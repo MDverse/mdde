@@ -1,0 +1,16 @@
+[project]
+name = "mdde"
+version = "0.1.0"
+description = "MDverse data explorer"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "itables<=2.3.0",
+    "matplotlib>=3.10.3",
+    "numpy>=2.3.0",
+    "pandas>=2.3.0",
+    "pyarrow>=20.0.0",
+    "scipy>=1.15.3",
+    "streamlit>=1.45.1",
+    "wordcloud>=1.9.4",
+]

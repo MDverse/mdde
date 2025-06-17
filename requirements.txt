@@ -1,8 +1,0 @@
-numpy
-scipy
-pandas
-pyarrow
-matplotlib
-streamlit>=1.18,<1.34
-itables
-wordcloud
